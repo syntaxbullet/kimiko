@@ -1,0 +1,28 @@
+{
+  "name": "kimiko-discord",
+  "version": "0.0.1-indev",
+  "description": "Kimiko is a self-hostable and fully modular plugin-based discord bot.",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "bot",
+    "discord",
+    "plugins",
+    "modular",
+    "anime",
+    "kimiko"
+  ],
+  "author": "syntaxbullet",
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "@eslint/js": "^9.4.0",
+    "@types/node": "^20.14.2",
+    "eslint": "^9.4.0",
+    "globals": "^15.4.0",
+    "typescript": "^5.4.5",
+    "typescript-eslint": "^7.12.0"
+  }
+}
