@@ -13,13 +13,16 @@ class KimikoClient extends Client {
     public logger!: typeof KimikoLogger;
 
     constructor(options: KimikoClientOptions) {
+        
         super({ intents: options.intents });
         // load plugins
-        Object.assign(this, KimikoLoader.load());
         Object.assign(this, options);
-        console.log(this);
-        this.once('ready', () => {
+        this.once('ready', (client) => {
             this.logger.debug('Kimiko is ready!');
+            // merge the kimiko client with client parameter
+            Object.assign(this, client);
+            // load plugins
+            KimikoLoader.load(this);
         });
     }
 }
@@ -28,6 +31,8 @@ export default new KimikoClient({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMembers,
     ],
     logger: KimikoLogger,
 });
