@@ -1,4 +1,4 @@
-enum terminalColors {
+export enum terminalColors {
     reset = "\x1b[0m",
     fgBlack = "\x1b[30m",
     fgRed = "\x1b[31m",

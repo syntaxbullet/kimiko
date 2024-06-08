@@ -2,7 +2,7 @@ import path from "path";
 import fs from "fs";
 
 import KimikoClient from "./KimikoClient";
-import KimikoLogger from "./KimikoLogger";
+import KimikoLogger, { terminalColors } from "./KimikoLogger";
 
 class KimikoLoader {
     public static load(client: typeof KimikoClient) {
@@ -18,10 +18,11 @@ class KimikoLoader {
         for (const key in pluginJson) {
             try {
                 plugins[key] = require(path.join(process.cwd(), pluginJson[key]));
-                KimikoLogger.info(`Loaded plugin ${key} from path ${pluginJson[key]}`);
+                KimikoLogger.custom(' LOADER ', terminalColors.fgWhite, terminalColors.bgCyan, `Loaded plugin ${key} from path ${pluginJson[key]}`);
+                console.log(plugins[key]);
                 // if the plugin has a function called init, call it
-                if (typeof plugins[key].init === 'function') {
-                    plugins[key].init(client);
+                if (typeof plugins[key].default.init === 'function') {
+                    plugins[key].default.init(client);
                 }
             }
             catch (e) {
