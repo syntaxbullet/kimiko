@@ -1,11 +1,24 @@
-import { Client } from "discord.js";
 import { KimikoClient } from "./KimikoClient";
+import { KimikoLogger } from "./KimikoLogger";
+import { KimikoPluginManager } from "./KimikoPluginManager";
 
-enum LogType {
+enum logColors {
+    RED = "\x1b[31m",
+    GREEN = "\x1b[32m",
+    YELLOW = "\x1b[33m",
+    BLUE = "\x1b[34m",
+    MAGENTA = "\x1b[35m",
+    CYAN = "\x1b[36m",
+    WHITE = "\x1b[37m",
+    RESET = "\x1b[0m"
+}
+
+enum logType {
     INFO = "INFO",
     WARN = "WARN",
     ERROR = "ERROR",
-    DEBUG = "DEBUG"
+    DEBUG = "DEBUG",
+    LOG = "LOG"
 }
 
 type KimikoRC = {
@@ -28,17 +41,6 @@ type PluginEntry = {
 	};
 };
 
-interface KimikoLogger {
-    log(type: LogType, ...messages: string[]): void;
-}
 
-interface KimikoLoader {
-    checkDependencies(plugin: PluginEntry): boolean;
-    loadPlugins(): void;
-}
-
-interface KimikoClient {
-    getConfig(): KimikoRC;
-}
 // TODO: Plugin interface/class
-export { KimikoRC, PluginEntry };
+export { logColors, logType, KimikoRC, PluginEntry, KimikoClient, KimikoLogger, KimikoPluginManager };

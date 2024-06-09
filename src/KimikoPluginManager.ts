@@ -1,7 +1,7 @@
 import path from "path";
 import { KimikoClient } from "./KimikoClient";
-import { KimikoLogger, LogType } from "./KimikoLogger";
-import { KimikoRC, PluginEntry } from "./types";
+import { KimikoLogger } from "./KimikoLogger";
+import { KimikoRC, PluginEntry, logColors, logType } from "./types";
 
 export class KimikoPluginManager {
     private static instance: KimikoPluginManager;
@@ -12,7 +12,7 @@ export class KimikoPluginManager {
 
     private constructor() {
         this.client = KimikoClient.getInstance();
-        this.logger = this.client.logger;
+        this.logger = new KimikoLogger("PluginManager");
         this.config = this.client.getConfig();
     }
 
@@ -25,17 +25,17 @@ export class KimikoPluginManager {
 
     public loadPlugin(plugin: PluginEntry): any {
         if (!plugin.enabled) {
-            this.logger.log(LogType.INFO, `Plugin ${plugin.name} is disabled and will not be loaded`);
+            this.logger.log(logType.INFO, logColors.BLUE, `Plugin ${plugin.name} is disabled`);
             return;
         }
 
         const pluginPath = this.getPluginPath(plugin);
         const pluginModule = require(pluginPath);
-        const instance = new pluginModule.default(this.client, this.logger);
+        const instance = new pluginModule.default(this.client, new KimikoLogger(plugin.name as string));
         const loadedDependencies = this.loadDependencies(instance.dependencies, plugin);
 
         if (loadedDependencies === null) {
-            this.logger.log(LogType.ERROR, `Could not load all dependencies for plugin ${plugin.name}`);
+            this.logger.log(logType.ERROR, logColors.RED, `Failed to load dependencies for plugin ${plugin.name}`);
             return;
         }
 
@@ -65,7 +65,7 @@ export class KimikoPluginManager {
 
             const pluginToLoad = this.config.plugins.find(p => p.name === dependencyName);
             if (!pluginToLoad) {
-                this.logger.log(LogType.ERROR, `Could not find plugin ${dependencyName} for plugin ${plugin.name}`);
+                this.logger.log(logType.ERROR, logColors.RED, `Dependency ${dependencyName} not found for plugin ${plugin.name}`);
                 return null;
             }
 

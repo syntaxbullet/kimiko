@@ -1,6 +1,6 @@
 import { KimikoClient } from "./KimikoClient";
 import { KimikoPluginManager } from "./KimikoPluginManager";
-import { LogType } from "./KimikoLogger";
+import { logColors, logType } from "./types";
 import dotenv from "dotenv";
 import { Events } from "discord.js";
 
@@ -11,7 +11,7 @@ const logger = client.logger;
 const loader = KimikoPluginManager.getInstance();
 
 client.once(Events.ClientReady, () => {
-    logger.log(LogType.INFO, "Kimiko is ready!");
+    logger.log(logType.INFO, logColors.GREEN, "Kimiko is ready!");
     loader.loadPlugins();
 });
 

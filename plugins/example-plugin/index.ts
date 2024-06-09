@@ -12,7 +12,7 @@ class MyPlugin  {
         });
     }
     public onLoad(...dependencies: any[]) {
-        this.logger.log("DEBUG", "MyPlugin loaded!");
+        this.logger.log("INFO", null, "MyPlugin loaded!");
     } // as long as this is defined the event listener above will not be called, if not defined the loader will emit the event and call the listener
 
 }

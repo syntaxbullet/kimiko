@@ -1,75 +1,45 @@
-import fs from "fs";
-import path from "path";
-import { KimikoRC } from "./types";
 import { config } from "./kimikorc";
+import { KimikoRC, logColors, logType } from "./types";
+import fs from "fs";
 
-enum LogType {
-    INFO = "INFO",
-    WARN = "WARN",
-    ERROR = "ERROR",
-    DEBUG = "DEBUG"
-}
 
-const LogColor = {
-    [LogType.INFO]: "\x1b[36m",
-    [LogType.WARN]: "\x1b[33m",
-    [LogType.ERROR]: "\x1b[31m",
-    [LogType.DEBUG]: "\x1b[35m",
-    RESET: "\x1b[0m"
-};
 
-/**
- * The KimikoLogger class provides logging functionality for the Kimiko application.
- */
 class KimikoLogger {
-    private static instance: KimikoLogger;
-    private static config: KimikoRC;
-    
-    /**
-     * Returns the singleton instance of the KimikoLogger class.
-     * @returns The singleton instance of the KimikoLogger class.
-     */
-    public static getInstance(): KimikoLogger {
-        if (!KimikoLogger.instance) {
-            try {
-                KimikoLogger.config = config;
-                KimikoLogger.instance = new KimikoLogger();
-            } catch (error) {
-                console.error("Failed to load configuration:", error);
-                process.exit(1);
+    private readonly config: KimikoRC = config;
+    private readonly pluginTarget: string | null = null;
+    private isConsoleEnabled: boolean = this.config.logging_default.logToConsole;
+    private isFileEnabled: boolean = this.config.logging_default.logToFile;
+    private suffix = this.pluginTarget;
+
+    constructor(pluginTarget: string | null) {
+
+        this.pluginTarget = pluginTarget;
+        this.suffix = this.pluginTarget ? `[${this.pluginTarget}]` : "";
+        if (this.pluginTarget) {
+            const matchingPlugin = this.config.plugins.find((plugin) => plugin.name === this.pluginTarget);
+            if (matchingPlugin) {
+                this.isConsoleEnabled = matchingPlugin.log_overrides?.logToConsole ?? this.config.logging_default.logToConsole;
+                this.isFileEnabled = matchingPlugin.log_overrides?.logToFile ?? this.config.logging_default.logToFile;
             }
         }
-        return KimikoLogger.instance;
     }
-    
-    /**
-     * Logs the specified messages with the given log type.
-     * @param type - The log type.
-     * @param messages - The messages to be logged.
-     */
-    public log(type: LogType, ...messages: string[]) {
-
-        const logToFile = KimikoLogger.config.logging_default.logToFile;
-        const logToConsole = KimikoLogger.config.logging_default.logToConsole;
-        const logFilePath = KimikoLogger.config.logging_default.logFilePath;
-       
-        const logMessage = `[${new Date().toLocaleString()}] [${type}] ${messages.join(" ")}`;
-        const logColor = LogColor[type];
-        const logReset = LogColor.RESET;
-
-        if (logToConsole) console.log(`${logColor}${logMessage}${logReset}`);
-        if (logToFile) {
-            const logFile = path.join(logFilePath, `${new Date().toLocaleDateString()}.log`);
-            fs.appendFile(logFile, `${logMessage}\n`, (error) => {
-                if (error) console.error("Failed to write to log file:", error);
-            });
-
+    public log(logType: logType, color?: logColors, ...messages: string[]): void {
+        if (this.isConsoleEnabled) {
+            console.log(`${color || ""}[${logType}] ${this.suffix} ${messages.join(" ")}${logColors.RESET}`);
         }
-            
-        
+        if (this.isFileEnabled) {
+            this.logToFile(logType, ...messages);
+        }
     }
-    
-    private constructor() {}
+    private logToFile(logType: logType, ...messages: string[]): void {
+        const logFilePath = this.pluginTarget ? `${this.config.logging_default.logFilePath}/${this.pluginTarget}.log` : `${this.config.logging_default.logFilePath}/kimiko.log`;
+        const logMessage = `[${logType}] [${this.suffix}] ${messages.join(" ")}\n`;
+        fs.appendFile(logFilePath, logMessage, (err) => {
+            if (err) {
+                console.error(`Error writing to log file: ${err}`);
+            }
+        });
+    }
 }
 
-export { KimikoLogger, LogType };
+export { KimikoLogger };

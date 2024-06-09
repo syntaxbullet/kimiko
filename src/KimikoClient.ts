@@ -8,7 +8,7 @@ import { config } from "./kimikorc";
  */
 class KimikoClient extends Client {
     private config: KimikoRC;
-    public logger: KimikoLogger = KimikoLogger.getInstance();
+    public logger: KimikoLogger = new KimikoLogger(null);
 
     private static instance: KimikoClient;
 
