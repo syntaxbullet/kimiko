@@ -46,6 +46,9 @@ export class KimikoPluginManager {
             // 1. check if the loaded plugins array contains the dependencies and load them if they are not loaded
             for (const dependency of instance.dependencies) { // checks if the loaded plugins array contains the dependencies and load them if they are not loaded
                 const dep = this.loadedPlugins.find((p) => p.name === dependency);
+                if (dep) {
+                    loadedDependencies.push(dep);
+                }
                 if (!dep) {
                     const pluginToLoad = this.config.plugins.find((p) => p.name === dependency); // find the plugin entry in the config
                     if (pluginToLoad) {
