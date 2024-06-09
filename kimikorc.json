@@ -4,6 +4,14 @@
         "logToConsole": true,
         "logFilePath": "logs/"
     },
-    "plugins": {},
+    "plugins": {
+        "example-plugin": {
+            "name": "example-plugin",
+            "enabled": true,
+            "path": "../example-plugin",
+            "config": {},
+            "dependencies": []
+        }
+    },
     "intents": ["Guilds", "GuildMessages", "MessageContent", "GuildMembers"]
 }

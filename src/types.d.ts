@@ -1,4 +1,5 @@
 import { Client } from "discord.js";
+import { KimikoClient } from "./KimikoClient";
 
 type KimikoRC = {
     logging: {
@@ -25,14 +26,17 @@ type PluginEntry = {
     dependencies: string[];
 };
 
-interface Plugin {
-    name: string;
-    path: string;
-    enabled: boolean;
-    config: Record<string, any>;
-    dependencies: string[];
-    onLoad: (client: Client<true>) => void;
-    onDestroy: () => void;
+interface KimikoLogger {
+    log(type: LogType, ...messages: string[]): void;
 }
 
+interface KimikoLoader {
+    checkDependencies(plugin: PluginEntry): boolean;
+    loadPlugins(): void;
+}
+
+interface KimikoClient {
+    getConfig(): KimikoRC;
+
+}
 export { KimikoRC, PluginEntry, Plugin };

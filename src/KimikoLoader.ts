@@ -59,10 +59,15 @@ class KimikoLoader {
                 try {
                     const pluginPath = path.join(__dirname, plugin.path);
                     const pluginModule = require(pluginPath);
-                    const pluginInstance = new pluginModule.default();
+                    const pluginInstance = new pluginModule.default(KimikoLoader.client, plugin.config);
                     this.plugins.push(pluginInstance);
                     KimikoLoader.client.logger.log(LogType.INFO, `Loaded plugin ${plugin.name}`);
-                    KimikoLoader.client.emit(`${plugin.name}:onload`, KimikoLoader.client);
+                    if (pluginInstance.onLoad) {
+                        pluginInstance.onLoad(KimikoLoader.client);
+                    } else {
+                        KimikoLoader.client.logger.log(LogType.WARN, `Plugin ${plugin.name} does not have an onLoad function, emitting event instead.`);
+                        KimikoLoader.client.emit(`${plugin.name}:onload`, KimikoLoader.client);
+                    }
                 } catch (error: any) {
                     KimikoLoader.client.logger.log(LogType.ERROR, `Failed to load plugin ${plugin.name}: ${error.message}`);
                 }
