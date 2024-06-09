@@ -1,0 +1,17 @@
+{
+  "name": "kimiko-types",
+  "version": "1.0.3",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "author": "",
+  "license": "MIT",
+  "description": "",
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "discord.js": "^14.15.3"
+  }
+}

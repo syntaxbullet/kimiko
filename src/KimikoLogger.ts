@@ -1,5 +1,5 @@
 import { config } from "./kimikorc";
-import { KimikoRC, logColors, logType } from "./types";
+import { KimikoRC, logColors, logType } from "kimiko-types";
 import fs from "fs";
 
 

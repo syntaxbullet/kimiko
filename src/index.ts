@@ -1,6 +1,6 @@
 import { KimikoClient } from "./KimikoClient";
 import { KimikoPluginManager } from "./KimikoPluginManager";
-import { logColors, logType } from "./types";
+import { logType, logColors } from "kimiko-types"
 import dotenv from "dotenv";
 import { Events } from "discord.js";
 

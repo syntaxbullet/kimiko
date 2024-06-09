@@ -1,7 +1,7 @@
 import path from "path";
 import { KimikoClient } from "./KimikoClient";
 import { KimikoLogger } from "./KimikoLogger";
-import { KimikoRC, PluginEntry, logColors, logType } from "./types";
+import { KimikoRC, PluginEntry, logColors, logType } from "kimiko-types";
 
 export class KimikoPluginManager {
     private static instance: KimikoPluginManager;

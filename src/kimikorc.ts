@@ -1,4 +1,4 @@
-import { KimikoRC } from "./types";
+import { KimikoRC } from "kimiko-types";
 
 const config: KimikoRC = {
     "logging_default": {

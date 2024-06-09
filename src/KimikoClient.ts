@@ -1,6 +1,6 @@
 import { Client, GatewayIntentBits } from "discord.js";
 import { KimikoLogger } from "./KimikoLogger";
-import { KimikoRC } from "./types";
+import { KimikoRC } from "kimiko-types";
 import { config } from "./kimikorc";
 
 /**
@@ -20,8 +20,7 @@ class KimikoClient extends Client {
     }
 
     public getConfig(): KimikoRC {
-		// TODO: Check if this returns a copy or a reference
-        return this.config;
+        return { ...this.config };
     }
 
     private constructor(config: KimikoRC) {
