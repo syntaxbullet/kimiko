@@ -1,0 +1,9 @@
+{
+    "logging": {
+        "logToFile": false,
+        "logToConsole": true,
+        "logFilePath": "logs/"
+    },
+    "plugins": {},
+    "intents": ["Guilds", "GuildMessages", "MessageContent", "GuildMembers"]
+}
