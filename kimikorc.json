@@ -1,0 +1,17 @@
+{
+    "logging": {
+        "logToFile": false,
+        "logToConsole": true,
+        "logFilePath": "logs/"
+    },
+    "plugins": {
+        "example-plugin": {
+            "name": "example-plugin",
+            "enabled": true,
+            "path": "../example-plugin",
+            "config": {},
+            "dependencies": []
+        }
+    },
+    "intents": ["Guilds", "GuildMessages", "MessageContent", "GuildMembers"]
+}
