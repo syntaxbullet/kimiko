@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { KimikoRC } from "./types";
+import { config } from "./kimikorc";
 
 enum LogType {
     INFO = "INFO",
@@ -31,7 +32,7 @@ class KimikoLogger {
     public static getInstance(): KimikoLogger {
         if (!KimikoLogger.instance) {
             try {
-                KimikoLogger.config = JSON.parse(fs.readFileSync(path.join(__dirname, "../kimikorc.json"), "utf-8"));
+                KimikoLogger.config = config;
                 KimikoLogger.instance = new KimikoLogger();
             } catch (error) {
                 console.error("Failed to load configuration:", error);
@@ -48,16 +49,24 @@ class KimikoLogger {
      */
     public log(type: LogType, ...messages: string[]) {
 
-       if (KimikoLogger.config.logging.logToConsole) {
-           console.log(`${LogColor[type]}[${type.toUpperCase()}]${LogColor.RESET} ${messages.join(" ")}`);
-       }
-         if (KimikoLogger.config.logging.logToFile) {
-              fs.appendFile(KimikoLogger.config.logging.logFilePath, `[${type.toUpperCase()}] ${messages.join(" ")}\n`, (err) => {
-                if (err) {
-                     console.error("Failed to write to log file:", err);
-                }
-              });
-         }
+        const logToFile = KimikoLogger.config.logging_default.logToFile;
+        const logToConsole = KimikoLogger.config.logging_default.logToConsole;
+        const logFilePath = KimikoLogger.config.logging_default.logFilePath;
+       
+        const logMessage = `[${new Date().toLocaleString()}] [${type}] ${messages.join(" ")}`;
+        const logColor = LogColor[type];
+        const logReset = LogColor.RESET;
+
+        if (logToConsole) console.log(`${logColor}${logMessage}${logReset}`);
+        if (logToFile) {
+            const logFile = path.join(logFilePath, `${new Date().toLocaleDateString()}.log`);
+            fs.appendFile(logFile, `${logMessage}\n`, (error) => {
+                if (error) console.error("Failed to write to log file:", error);
+            });
+
+        }
+            
+        
     }
     
     private constructor() {}

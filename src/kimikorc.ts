@@ -9,7 +9,7 @@ const config: KimikoRC = {
     "plugins": [
         {
             "name": "example-plugin",
-            "path": "../example-plugin",
+            "path": "example-plugin",
             "enabled": true,
 			"log_overrides": {
 				"logToFile": false,
