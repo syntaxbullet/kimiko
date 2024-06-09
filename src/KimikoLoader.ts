@@ -1,5 +1,5 @@
 import path from "path";
-import { KimikoRC, Plugin, PluginEntry } from "./types";
+import { KimikoRC, PluginEntry } from "./types";
 import { KimikoClient } from "./KimikoClient";
 import { LogType } from "./KimikoLogger";
 
@@ -10,7 +10,7 @@ class KimikoLoader {
     private static instance: KimikoLoader;
     private static config: KimikoRC;
     private static client: KimikoClient;
-    private plugins: Plugin[] = [];
+    private plugins: any[] = [];
 
     /**
      * Returns the singleton instance of the `KimikoLoader` class.
@@ -55,6 +55,7 @@ class KimikoLoader {
     public async loadPlugins() {
         const pluginsToLoad: PluginEntry[] = Object.values(KimikoLoader.config.plugins);
         pluginsToLoad.forEach((plugin) => {
+			// TODO: Check that dependencies are loaded first
             if (plugin.enabled && this.checkDependencies(plugin)) {
                 try {
                     const pluginPath = path.join(__dirname, plugin.path);

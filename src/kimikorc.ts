@@ -1,17 +1,23 @@
-{
-    "logging": {
+import { KimikoRC } from "./types";
+
+const config: KimikoRC = {
+    "logging_default": {
         "logToFile": false,
         "logToConsole": true,
         "logFilePath": "logs/"
     },
-    "plugins": {
-        "example-plugin": {
+    "plugins": [
+        {
             "name": "example-plugin",
-            "enabled": true,
             "path": "../example-plugin",
-            "config": {},
-            "dependencies": []
+            "enabled": true,
+			"log_overrides": {
+				"logToFile": false,
+				"logToConsole": false
+			}
         }
-    },
+    ],
     "intents": ["Guilds", "GuildMessages", "MessageContent", "GuildMembers"]
 }
+
+export { config };

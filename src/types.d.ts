@@ -1,20 +1,20 @@
 import { Client } from "discord.js";
 import { KimikoClient } from "./KimikoClient";
 
+enum LogType {
+    INFO = "INFO",
+    WARN = "WARN",
+    ERROR = "ERROR",
+    DEBUG = "DEBUG"
+}
+
 type KimikoRC = {
-    logging: {
+    logging_default: {
         logToFile: boolean;
         logToConsole: boolean;
         logFilePath: string;
-        colors: {
-            info: string;
-            warn: string;
-            error: string;
-            debug: string;
-            reset: string;
-        };
     };
-    plugins: Record<string, PluginEntry>;
+    plugins: PluginEntry[];
     intents: string[];
 };
 
@@ -22,8 +22,10 @@ type PluginEntry = {
     name: string;
     path: string;
     enabled: boolean;
-    config: Record<string, any>;
-    dependencies: string[];
+	log_overrides?: {
+		logToFile?: boolean;
+		logToConsole?: boolean;
+	};
 };
 
 interface KimikoLogger {
@@ -37,6 +39,6 @@ interface KimikoLoader {
 
 interface KimikoClient {
     getConfig(): KimikoRC;
-
 }
-export { KimikoRC, PluginEntry, Plugin };
+// TODO: Plugin interface/class
+export { KimikoRC, PluginEntry };
