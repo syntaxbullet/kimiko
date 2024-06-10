@@ -35,14 +35,9 @@ export class KimikoPluginManager {
 
     const pluginPath = this.getPluginPath(plugin);
     const pluginModule = require(pluginPath);
-    const instance = new pluginModule.default(
-      this.client,
-      new KimikoLogger(plugin.name as string),
-    );
-    const loadedDependencies = this.loadDependencies(
-      instance.dependencies,
-      plugin,
-    );
+    const dependencies = require(path.join(pluginPath, 'package.json'))
+      .pluginDependencies as string[];
+    const loadedDependencies = this.loadDependencies(dependencies, plugin);
 
     if (loadedDependencies === null) {
       this.logger.log(
@@ -53,9 +48,9 @@ export class KimikoPluginManager {
       return;
     }
 
-    this.callOnLoad(instance, loadedDependencies);
+    this.callOnLoad(pluginModule, loadedDependencies, plugin.name);
     this.loadedPlugins.push(plugin);
-    return instance;
+    return;
   }
 
   private getPluginPath(plugin: PluginEntry): string {
@@ -107,9 +102,22 @@ export class KimikoPluginManager {
     return this.loadedPlugins.find((p) => p.name === dependencyName);
   }
 
-  private callOnLoad(instance: any, loadedDependencies: any[]): void {
+  private callOnLoad(
+    instance: any,
+    loadedDependencies: any[],
+    name: string,
+  ): void {
     if (instance.onLoad) {
-      instance.onLoad(...loadedDependencies);
+      this.logger.log(
+        logType.DEBUG,
+        logColors.MAGENTA,
+        `Loaded plugin ${name}`,
+      );
+      instance.onLoad(
+        this.client,
+        new KimikoLogger(name),
+        ...loadedDependencies,
+      );
     }
   }
 
