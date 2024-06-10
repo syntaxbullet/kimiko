@@ -7,7 +7,17 @@ const config: KimikoRC = {
     logToConsole: true,
     logFilePath: 'logs/',
   },
-  plugins: [],
+  plugins: [
+    {
+      name: 'example-plugin',
+      path: 'example-plugin',
+      enabled: true,
+      log_overrides: {
+        logToFile: false,
+        logToConsole: true,
+      },
+    },
+  ],
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
