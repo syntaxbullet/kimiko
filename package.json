@@ -4,7 +4,8 @@
   "description": "Kimiko is a self-hostable and fully modular plugin-based discord bot.",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "ts-node -r tsconfig-paths/register src/index.ts"
+    "dev": "ts-node -r tsconfig-paths/register src/index.ts",
+    "format": "prettier --write ."
   },
   "keywords": [
     "bot",
@@ -17,9 +18,12 @@
   "author": "syntaxbullet",
   "license": "GPL-3.0",
   "devDependencies": {
+    "@kimikobot/types": "^0.0.1",
     "@types/dotenv": "^8.2.0",
     "@types/node": "^20.14.2",
-    "kimiko-types": "^1.0.0",
+    "install": "0.13.0",
+    "npm": "10.8.1",
+    "prettier": "3.3.1",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.4.5"
