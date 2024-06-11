@@ -1,5 +1,4 @@
 import { Client } from 'discord.js';
-import { KimikoLogger } from './KimikoLogger';
 import { KimikoRC } from '@kimikobot/types';
 import { config } from './kimikorc';
 
@@ -8,8 +7,6 @@ import { config } from './kimikorc';
  */
 class KimikoClient extends Client<true> {
   private config: KimikoRC;
-  private plugins: Map<string, any> = new Map();
-  public logger: KimikoLogger = new KimikoLogger(this.plugins, null);
 
   private static instance: KimikoClient;
 
@@ -29,9 +26,6 @@ class KimikoClient extends Client<true> {
       intents: config.intents,
     });
     this.config = { ...config };
-    if (plugins) {
-      this.plugins = plugins;
-    }
   }
 }
 

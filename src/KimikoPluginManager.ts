@@ -9,8 +9,7 @@ class KimikoPluginManager {
   private static instance: KimikoPluginManager;
   private static readonly PLUGIN_DIR = path.join(__dirname, '..', 'plugins', 'node_modules');
   private static readonly client = KimikoClient.getInstance();
-  private static readonly logger = new KimikoLogger(new Map(), 'PluginManager');
-  private readonly config: KimikoRC = KimikoClient.getInstance().getConfig();
+  private static readonly logger = new KimikoLogger('PluginManager');
   public loadedPlugins: Map<string, any> = new Map();
 
   private constructor() {}
@@ -49,7 +48,7 @@ class KimikoPluginManager {
       const pluginExports = require(pluginPath);
       this.loadedPlugins.set(pluginName, { name: packageJSON.name, exports: pluginExports });
       KimikoPluginManager.logger.log(logType.INFO, logColors.GREEN, `Loaded plugin ${pluginName}`);
-      pluginExports.onLoad(KimikoPluginManager.client, KimikoPluginManager.logger);
+      pluginExports.onLoad(KimikoPluginManager.client, new KimikoLogger(pluginName));
     } catch (error: any) {
       KimikoPluginManager.logger.log(
         logType.ERROR,
