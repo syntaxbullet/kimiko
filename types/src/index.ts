@@ -57,58 +57,63 @@ export type KimikoPluginManager = {
   unloadPlugin(name: string): void;
 };
 
+// TODO: These configs are relatively stiff and could be made much more flexible. They are acting more as a
+// baseplate that can be used for a quick prototype later, when the web interface development begins.
 export enum ConfigType {
-	Integer = "integer",
-	Real = "real",
-	Toggle = "toggle",
-	Radio = "radio",
-};
+  Integer = 'integer',
+  Real = 'real',
+  Toggle = 'toggle',
+  Radio = 'radio',
+}
 
 export type IntegerConfig = {
-	type: ConfigType.Integer;
-	label: string;
-	cur_val: number;
-	description?: string;
-	min_val?: number;
-	max_val?: number;
+  type: ConfigType.Integer;
+  label: string;
+  cur_val: number;
+  description?: string;
+  min_val?: number;
+  max_val?: number;
 };
 
 export type RealConfig = {
-	type: ConfigType.Real;
-	label: string;
-	cur_val: number;
-	description?: string;
-	min_val?: number;
-	max_val?: number;
+  type: ConfigType.Real;
+  label: string;
+  cur_val: number;
+  description?: string;
+  min_val?: number;
+  max_val?: number;
 };
 
 export type ToggleConfig = {
-	type: ConfigType.Toggle;
-	label: string;
-	cur_val: boolean;
-	description?: string;
+  type: ConfigType.Toggle;
+  label: string;
+  cur_val: boolean;
+  description?: string;
 };
 
 export type RadioConfig = {
-	type: ConfigType.Radio;
-	label: string;
-	cur_val: number;
-	options: { label: string; state: boolean }[];
+  type: ConfigType.Radio;
+  label: string;
+  cur_val: number;
+  options: { label: string; state: boolean }[];
 };
 
-export type ConfigSpec = IntegerConfig | RealConfig | ToggleConfig | RadioConfig;
+export type ConfigSpec =
+  | IntegerConfig
+  | RealConfig
+  | ToggleConfig
+  | RadioConfig;
 
 export type PluginExport = {
-	name: string;
-	exports: {[key: string]: any};
+  name: string;
+  exports: { [key: string]: any };
 };
 
 export interface KimikoPlugin {
-	init(client: Client, logger: KimikoLogger): void;
-	config?: {
-		configParameters: ConfigSpec[];
-		setConfig(options: ConfigSpec[]): void;
-	};
-	exports?: {[key: string]: any};
-	onLoad?(dependencies: PluginExport[]): void;
-};
+  onLoad(client: KimikoClient, logger: KimikoLogger, dependencies: PluginExport[]): void;
+  config?: {
+    configParameters: ConfigSpec[];
+    setConfig(options: ConfigSpec[]): void;
+  };
+  exports?: { [key: string]: any };
+}
