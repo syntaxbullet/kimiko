@@ -1,14 +1,16 @@
 import path from 'path';
 import { KimikoClient } from './KimikoClient';
 import { KimikoLogger } from './KimikoLogger';
-import { KimikoRC, PluginEntry, logColors, logType } from '@kimikobot/types';
+import { KimikoRC, KimikoPlugin, PluginExport, PluginEntry, logColors, logType } from '@kimikobot/types';
+
+type LoadedPlugin = PluginEntry & { plugin: KimikoPlugin };
 
 export class KimikoPluginManager {
   private static instance: KimikoPluginManager;
   private readonly client: KimikoClient;
   private readonly logger: KimikoLogger;
   private readonly config: KimikoRC;
-  private loadedPlugins: PluginEntry[] = [];
+  private loadedPlugins: LoadedPlugin[] = [];
 
   private constructor() {
     this.client = KimikoClient.getInstance();
@@ -23,55 +25,58 @@ export class KimikoPluginManager {
     return KimikoPluginManager.instance;
   }
 
-  public loadPlugin(plugin: PluginEntry): any {
-    if (!plugin.enabled) {
+  public loadPlugin(entry: PluginEntry): LoadedPlugin | undefined {
+    // Double enabled check? `loadPlugins` also checks.
+    if (!entry.enabled) {
       this.logger.log(
         logType.INFO,
         logColors.BLUE,
-        `Plugin ${plugin.name} is disabled`,
+        `Plugin ${entry.name} is disabled`,
       );
       return;
     }
 
-    const pluginPath = this.getPluginPath(plugin);
-    const pluginModule = require(pluginPath);
+    const pluginPath = this.getPluginPath(entry);
+    const pluginModule: KimikoPlugin = require(pluginPath).default;
     const dependencies = require(path.join(pluginPath, 'package.json'))
       .pluginDependencies as string[];
-    const loadedDependencies = this.loadDependencies(dependencies, plugin);
+    const loadedDependencies: PluginExport[] | null = this.loadDependencies(dependencies, entry);
 
     if (loadedDependencies === null) {
       this.logger.log(
         logType.ERROR,
         logColors.RED,
-        `Failed to load dependencies for plugin ${plugin.name}`,
+        `Failed to load dependencies for plugin ${entry.name}`,
       );
       return;
     }
 
-    this.callOnLoad(pluginModule, loadedDependencies, plugin.name);
-    this.loadedPlugins.push(plugin);
-    return;
+    this.callOnLoad(pluginModule, loadedDependencies, entry.name);
+    this.loadedPlugins.push({ ...entry, plugin: pluginModule });
+    return { ...entry, plugin: pluginModule };
   }
 
   private getPluginPath(plugin: PluginEntry): string {
     return path.join(__dirname, '..', 'plugins', plugin.path);
   }
 
+  // Do we need a seperate function for loading dependencies?
+  // It seems like the load function could just be recursive and check if something was already loaded.
   private loadDependencies(
     dependencies: string[] | undefined,
     plugin: PluginEntry,
-  ): any[] | null {
+  ): PluginExport[] | null {
     if (!dependencies || dependencies.length === 0) {
       return [];
     }
 
-    const loadedDependencies: any[] = [];
+    const loadedDependencies: PluginExport[] = [];
 
     for (const dependencyName of dependencies) {
       const loadedDependency = this.getLoadedDependency(dependencyName);
 
       if (loadedDependency) {
-        loadedDependencies.push(loadedDependency);
+        loadedDependencies.push({ name: dependencyName, exports: loadedDependency.plugin.exports ?? [] });
         continue;
       }
 
@@ -89,7 +94,7 @@ export class KimikoPluginManager {
 
       const newlyLoadedDependency = this.loadPlugin(pluginToLoad);
       if (newlyLoadedDependency) {
-        loadedDependencies.push(newlyLoadedDependency);
+        loadedDependencies.push({ name: dependencyName, exports: newlyLoadedDependency.plugin.exports ?? [] });
       }
     }
 
@@ -98,13 +103,13 @@ export class KimikoPluginManager {
       : null;
   }
 
-  private getLoadedDependency(dependencyName: string): PluginEntry | undefined {
+  private getLoadedDependency(dependencyName: string): LoadedPlugin | undefined {
     return this.loadedPlugins.find((p) => p.name === dependencyName);
   }
 
   private callOnLoad(
-    instance: any,
-    loadedDependencies: any[],
+    instance: KimikoPlugin,
+    loadedDependencies: PluginExport[],
     name: string,
   ): void {
     if (instance.onLoad) {
@@ -123,9 +128,7 @@ export class KimikoPluginManager {
 
   public loadPlugins(): void {
     this.config.plugins.forEach((plugin) => {
-      if (plugin.enabled) {
         this.loadPlugin(plugin);
-      }
     });
   }
 }

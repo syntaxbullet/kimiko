@@ -6,7 +6,7 @@ import { config } from './kimikorc';
 /**
  * Represents a client for the Kimiko application.
  */
-class KimikoClient extends Client {
+class KimikoClient extends Client<true> {
   private config: KimikoRC;
   public logger: KimikoLogger = new KimikoLogger(null);
 

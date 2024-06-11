@@ -46,7 +46,7 @@ export type KimikoLogger = {
 export type KimikoClient = Client<true> & {
   logger: KimikoLogger;
   getConfig(): KimikoRC;
-  getInstance(): KimikoClient;
+  getInstance?(): KimikoClient;
 };
 
 export type KimikoPluginManager = {
@@ -110,7 +110,8 @@ export type PluginExport = {
 };
 
 export interface KimikoPlugin {
-  onLoad(client: KimikoClient, logger: KimikoLogger, dependencies: PluginExport[]): void;
+  onLoad(client: KimikoClient, logger: KimikoLogger, ...dependencies: PluginExport[]): void;
+  onUnload(): void;
   config?: {
     configParameters: ConfigSpec[];
     setConfig(options: ConfigSpec[]): void;
