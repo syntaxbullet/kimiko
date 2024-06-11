@@ -6,8 +6,9 @@ import { Events } from 'discord.js';
 
 dotenv.config();
 
-const client = KimikoClient.getInstance();
 const pluginManager = KimikoPluginManager.getInstance();
+
+const client = KimikoClient.getInstance(pluginManager.loadedPlugins);
 
 client.once(Events.ClientReady, () => {
   client.logger.log(logType.INFO, logColors.GREEN, 'Kimiko is ready!');

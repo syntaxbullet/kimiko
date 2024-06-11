@@ -8,13 +8,15 @@ class KimikoLogger {
   private isConsoleEnabled: boolean;
   private isFileEnabled: boolean;
   private suffix: string;
+  private plugins: Map<string, any> = new Map();
 
-  constructor(pluginTarget: string | null) {
+  constructor(plugins: Map<string, any>, pluginTarget: string | null) {
     this.config = config;
     this.pluginTarget = pluginTarget;
     this.suffix = this.pluginTarget ? `[${this.pluginTarget}]` : '';
     this.isConsoleEnabled = this.getConsoleEnabled();
     this.isFileEnabled = this.getFileEnabled();
+    this.plugins = plugins;
   }
 
   public log(logType: logType, color?: logColors, ...messages: string[]): void {
@@ -30,13 +32,8 @@ class KimikoLogger {
 
   private getOption(option: 'logToConsole' | 'logToFile'): boolean {
     if (this.pluginTarget) {
-      const matchingPlugin = this.config.plugins.find(
-        (plugin) => plugin.name === this.pluginTarget,
-      );
-      return (
-        matchingPlugin?.log_overrides?.[option] ??
-        this.config.logging_default[option]
-      );
+      const matchingPlugin = this.plugins.get(this.pluginTarget);
+      return matchingPlugin?.log_overrides?.[option] ?? this.config.logging_default[option];
     }
     return this.config.logging_default[option];
   }

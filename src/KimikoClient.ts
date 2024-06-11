@@ -8,13 +8,14 @@ import { config } from './kimikorc';
  */
 class KimikoClient extends Client<true> {
   private config: KimikoRC;
-  public logger: KimikoLogger = new KimikoLogger(null);
+  private plugins: Map<string, any> = new Map();
+  public logger: KimikoLogger = new KimikoLogger(this.plugins, null);
 
   private static instance: KimikoClient;
 
-  public static getInstance(): KimikoClient {
+  public static getInstance(plugins?: Map<string, any>): KimikoClient {
     if (!KimikoClient.instance) {
-      KimikoClient.instance = new KimikoClient(config);
+      KimikoClient.instance = new KimikoClient(config, plugins);
     }
     return KimikoClient.instance;
   }
@@ -23,11 +24,14 @@ class KimikoClient extends Client<true> {
     return { ...this.config };
   }
 
-  private constructor(config: KimikoRC) {
+  private constructor(config: KimikoRC, plugins?: Map<string, any>) {
     super({
       intents: config.intents,
     });
     this.config = { ...config };
+    if (plugins) {
+      this.plugins = plugins;
+    }
   }
 }
 

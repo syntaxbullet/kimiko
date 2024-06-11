@@ -1,152 +1,72 @@
 import path from 'path';
+import fs from 'fs';
+
 import { KimikoClient } from './KimikoClient';
 import { KimikoLogger } from './KimikoLogger';
-import {
-  KimikoRC,
-  KimikoPlugin,
-  PluginExport,
-  PluginEntry,
-  logColors,
-  logType,
-} from '@kimikobot/types';
+import { logColors, logType, KimikoRC } from '@kimikobot/types';
 
-type LoadedPlugin = PluginEntry & { plugin: KimikoPlugin };
-
-export class KimikoPluginManager {
+class KimikoPluginManager {
   private static instance: KimikoPluginManager;
-  private readonly client: KimikoClient;
-  private readonly logger: KimikoLogger;
-  private readonly config: KimikoRC;
-  private loadedPlugins: LoadedPlugin[] = [];
+  private static readonly PLUGIN_DIR = path.join(__dirname, '..', 'plugins', 'node_modules');
+  private static readonly client = KimikoClient.getInstance();
+  private static readonly logger = new KimikoLogger(new Map(), 'PluginManager');
+  private readonly config: KimikoRC = KimikoClient.getInstance().getConfig();
+  public loadedPlugins: Map<string, any> = new Map();
 
-  private constructor() {
-    this.client = KimikoClient.getInstance();
-    this.logger = new KimikoLogger('PluginManager');
-    this.config = this.client.getConfig();
-  }
+  private constructor() {}
 
   public static getInstance(): KimikoPluginManager {
     if (!KimikoPluginManager.instance) {
       KimikoPluginManager.instance = new KimikoPluginManager();
     }
+
     return KimikoPluginManager.instance;
   }
 
-  public loadPlugin(entry: PluginEntry): LoadedPlugin | undefined {
-    // Double enabled check? `loadPlugins` also checks.
-    if (!entry.enabled) {
-      this.logger.log(
-        logType.INFO,
-        logColors.BLUE,
-        `Plugin ${entry.name} is disabled`,
-      );
-      return;
+  private async loadPlugin(pluginName: string): Promise<void> {
+    if (this.loadedPlugins.has(pluginName)) return;
+
+    const pluginPath = path.join(KimikoPluginManager.PLUGIN_DIR, pluginName);
+    const packageJSONPath = path.join(pluginPath, 'package.json');
+
+    if (!fs.existsSync(path.join(KimikoPluginManager.PLUGIN_DIR, pluginName, 'package.json'))) {
+      throw new Error(`Plugin ${pluginName} is not installed or does not exist`);
     }
+    try {
+      const unloadedDependencies = new Set<string>();
 
-    const pluginPath = this.getPluginPath(entry);
-    const pluginModule: KimikoPlugin = require(pluginPath).default;
-    const dependencies = require(path.join(pluginPath, 'package.json'))
-      .pluginDependencies as string[];
-    const loadedDependencies: PluginExport[] | null = this.loadDependencies(
-      dependencies,
-      entry,
-    );
+      const packageJSON = JSON.parse(fs.readFileSync(packageJSONPath, 'utf-8'));
 
-    if (loadedDependencies === null) {
-      this.logger.log(
+      for (const dep in packageJSON.dependencies) {
+        const pkg = packageJSON.dependencies[dep];
+        if (pkg.startsWith('file:../')) {
+          unloadedDependencies.add(pkg.split('file:../')[1]);
+          await this.loadPlugin(pkg.split('file:../')[1]).then(() => {
+            unloadedDependencies.delete(pkg.split('file:../')[1]);
+          });
+        }
+      }
+      const pluginExports = require(pluginPath);
+      this.loadedPlugins.set(pluginName, { name: packageJSON.name, exports: pluginExports });
+      KimikoPluginManager.logger.log(logType.INFO, logColors.GREEN, `Loaded plugin ${pluginName}`);
+      pluginExports.onLoad(KimikoPluginManager.client, KimikoPluginManager.logger);
+    } catch (error: any) {
+      KimikoPluginManager.logger.log(
         logType.ERROR,
         logColors.RED,
-        `Failed to load dependencies for plugin ${entry.name}`,
-      );
-      return;
-    }
-
-    this.callOnLoad(pluginModule, loadedDependencies, entry.name);
-    this.loadedPlugins.push({ ...entry, plugin: pluginModule });
-    return { ...entry, plugin: pluginModule };
-  }
-
-  private getPluginPath(plugin: PluginEntry): string {
-    return path.join(__dirname, '..', 'plugins', plugin.path);
-  }
-
-  // Do we need a seperate function for loading dependencies?
-  // It seems like the load function could just be recursive and check if something was already loaded.
-  private loadDependencies(
-    dependencies: string[] | undefined,
-    plugin: PluginEntry,
-  ): PluginExport[] | null {
-    if (!dependencies || dependencies.length === 0) {
-      return [];
-    }
-
-    const loadedDependencies: PluginExport[] = [];
-
-    for (const dependencyName of dependencies) {
-      const loadedDependency = this.getLoadedDependency(dependencyName);
-
-      if (loadedDependency) {
-        loadedDependencies.push({
-          name: dependencyName,
-          exports: loadedDependency.plugin.exports ?? [],
-        });
-        continue;
-      }
-
-      const pluginToLoad = this.config.plugins.find(
-        (p) => p.name === dependencyName,
-      );
-      if (!pluginToLoad) {
-        this.logger.log(
-          logType.ERROR,
-          logColors.RED,
-          `Dependency ${dependencyName} not found for plugin ${plugin.name}`,
-        );
-        return null;
-      }
-
-      const newlyLoadedDependency = this.loadPlugin(pluginToLoad);
-      if (newlyLoadedDependency) {
-        loadedDependencies.push({
-          name: dependencyName,
-          exports: newlyLoadedDependency.plugin.exports ?? [],
-        });
-      }
-    }
-
-    return loadedDependencies.length === dependencies.length
-      ? loadedDependencies
-      : null;
-  }
-
-  private getLoadedDependency(
-    dependencyName: string,
-  ): LoadedPlugin | undefined {
-    return this.loadedPlugins.find((p) => p.name === dependencyName);
-  }
-
-  private callOnLoad(
-    instance: KimikoPlugin,
-    loadedDependencies: PluginExport[],
-    name: string,
-  ): void {
-    if (instance.onLoad) {
-      this.logger.log(
-        logType.DEBUG,
-        logColors.MAGENTA,
-        `Loaded plugin ${name}`,
-      );
-      instance.onLoad(
-        this.client,
-        new KimikoLogger(name),
-        ...loadedDependencies,
+        `Error loading plugin ${pluginName}: ${error.message}`,
       );
     }
   }
 
-  public loadPlugins(): void {
-    this.config.plugins.forEach((plugin) => {
-      this.loadPlugin(plugin);
-    });
+  public async loadPlugins(): Promise<Map<string, any>> {
+    const pluginDirectories = fs.readdirSync(KimikoPluginManager.PLUGIN_DIR);
+    // for each subdirectory in the plugins directory load the plugin
+    for (const plugin of pluginDirectories) {
+      await this.loadPlugin(plugin);
+    }
+    return this.loadedPlugins;
   }
 }
+
+export { KimikoPluginManager };
