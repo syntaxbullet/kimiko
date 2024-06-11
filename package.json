@@ -18,7 +18,7 @@
   "author": "syntaxbullet",
   "license": "GPL-3.0",
   "devDependencies": {
-    "@kimikobot/types": "^0.0.1",
+    "@kimikobot/types": "file:types",
     "@types/dotenv": "^8.2.0",
     "@types/node": "^20.14.2",
     "install": "0.13.0",
