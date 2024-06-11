@@ -49,14 +49,6 @@ export type KimikoClient = Client<true> & {
   getInstance?(): KimikoClient;
 };
 
-export type KimikoPluginManager = {
-  loadPlugins(): void;
-  getPlugins(): PluginEntry[];
-  getPlugin(name: string): PluginEntry | null;
-  reloadPlugin(name: string): void;
-  unloadPlugin(name: string): void;
-};
-
 // TODO: These configs are relatively stiff and could be made much more flexible. They are acting more as a
 // baseplate that can be used for a quick prototype later, when the web interface development begins.
 export enum ConfigType {

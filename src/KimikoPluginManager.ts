@@ -33,7 +33,6 @@ export class KimikoPluginManager {
   }
 
   public loadPlugin(entry: PluginEntry): LoadedPlugin | undefined {
-    // Double enabled check? `loadPlugins` also checks.
     if (!entry.enabled) {
       this.logger.log(
         logType.INFO,
