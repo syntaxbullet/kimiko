@@ -1,7 +1,14 @@
 import path from 'path';
 import { KimikoClient } from './KimikoClient';
 import { KimikoLogger } from './KimikoLogger';
-import { KimikoRC, KimikoPlugin, PluginExport, PluginEntry, logColors, logType } from '@kimikobot/types';
+import {
+  KimikoRC,
+  KimikoPlugin,
+  PluginExport,
+  PluginEntry,
+  logColors,
+  logType,
+} from '@kimikobot/types';
 
 type LoadedPlugin = PluginEntry & { plugin: KimikoPlugin };
 
@@ -40,7 +47,10 @@ export class KimikoPluginManager {
     const pluginModule: KimikoPlugin = require(pluginPath).default;
     const dependencies = require(path.join(pluginPath, 'package.json'))
       .pluginDependencies as string[];
-    const loadedDependencies: PluginExport[] | null = this.loadDependencies(dependencies, entry);
+    const loadedDependencies: PluginExport[] | null = this.loadDependencies(
+      dependencies,
+      entry,
+    );
 
     if (loadedDependencies === null) {
       this.logger.log(
@@ -76,7 +86,10 @@ export class KimikoPluginManager {
       const loadedDependency = this.getLoadedDependency(dependencyName);
 
       if (loadedDependency) {
-        loadedDependencies.push({ name: dependencyName, exports: loadedDependency.plugin.exports ?? [] });
+        loadedDependencies.push({
+          name: dependencyName,
+          exports: loadedDependency.plugin.exports ?? [],
+        });
         continue;
       }
 
@@ -94,7 +107,10 @@ export class KimikoPluginManager {
 
       const newlyLoadedDependency = this.loadPlugin(pluginToLoad);
       if (newlyLoadedDependency) {
-        loadedDependencies.push({ name: dependencyName, exports: newlyLoadedDependency.plugin.exports ?? [] });
+        loadedDependencies.push({
+          name: dependencyName,
+          exports: newlyLoadedDependency.plugin.exports ?? [],
+        });
       }
     }
 
@@ -103,7 +119,9 @@ export class KimikoPluginManager {
       : null;
   }
 
-  private getLoadedDependency(dependencyName: string): LoadedPlugin | undefined {
+  private getLoadedDependency(
+    dependencyName: string,
+  ): LoadedPlugin | undefined {
     return this.loadedPlugins.find((p) => p.name === dependencyName);
   }
 
@@ -128,7 +146,7 @@ export class KimikoPluginManager {
 
   public loadPlugins(): void {
     this.config.plugins.forEach((plugin) => {
-        this.loadPlugin(plugin);
+      this.loadPlugin(plugin);
     });
   }
 }

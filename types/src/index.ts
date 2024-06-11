@@ -110,7 +110,11 @@ export type PluginExport = {
 };
 
 export interface KimikoPlugin {
-  onLoad(client: KimikoClient, logger: KimikoLogger, ...dependencies: PluginExport[]): void;
+  onLoad(
+    client: KimikoClient,
+    logger: KimikoLogger,
+    ...dependencies: PluginExport[]
+  ): void;
   onUnload(): void;
   config?: {
     configParameters: ConfigSpec[];
