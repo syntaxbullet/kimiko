@@ -30,13 +30,7 @@ class KimikoLogger {
 
   private getOption(option: 'logToConsole' | 'logToFile'): boolean {
     if (this.pluginTarget) {
-      const matchingPlugin = this.config.plugins.find(
-        (plugin) => plugin.name === this.pluginTarget,
-      );
-      return (
-        matchingPlugin?.log_overrides?.[option] ??
-        this.config.logging_default[option]
-      );
+      return this.config.logging_default[option];
     }
     return this.config.logging_default[option];
   }

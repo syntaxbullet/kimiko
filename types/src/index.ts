@@ -6,18 +6,7 @@ export type KimikoRC = {
     logToConsole: boolean;
     logFilePath: string;
   };
-  plugins: PluginEntry[];
   intents: GatewayIntentBits[];
-};
-
-export type PluginEntry = {
-  name: string;
-  path: string;
-  enabled: boolean;
-  log_overrides?: {
-    logToFile?: boolean;
-    logToConsole?: boolean;
-  };
 };
 
 export enum logColors {
@@ -96,21 +85,11 @@ export type ConfigSpec =
   | ToggleConfig
   | RadioConfig;
 
-export type PluginExport = {
-  name: string;
-  exports: { [key: string]: any };
-};
-
 export interface KimikoPlugin {
-  onLoad(
-    client: KimikoClient,
-    logger: KimikoLogger,
-    ...dependencies: PluginExport[]
-  ): void;
+  onLoad(client: KimikoClient, logger: KimikoLogger): void;
   onUnload(): void;
   config?: {
     configParameters: ConfigSpec[];
     setConfig(options: ConfigSpec[]): void;
   };
-  exports?: { [key: string]: any };
 }
