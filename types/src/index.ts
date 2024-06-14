@@ -79,11 +79,7 @@ export type RadioConfig = {
   options: { label: string; state: boolean }[];
 };
 
-export type ConfigSpec =
-  | IntegerConfig
-  | RealConfig
-  | ToggleConfig
-  | RadioConfig;
+export type ConfigSpec = IntegerConfig | RealConfig | ToggleConfig | RadioConfig;
 
 export interface KimikoPlugin {
   onLoad(client: KimikoClient, logger: KimikoLogger): void;
