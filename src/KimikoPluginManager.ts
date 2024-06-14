@@ -3,12 +3,11 @@ import fs from 'fs';
 
 import { KimikoClient } from './KimikoClient';
 import { KimikoLogger } from './KimikoLogger';
-import { logColors, logType, KimikoRC } from '@kimikobot/types';
+import { logColors, logType } from '@kimikobot/types';
 
 class KimikoPluginManager {
   private static instance: KimikoPluginManager;
   private static readonly BOT_ROOT_DIR = path.join(__dirname, '..');
-  private static readonly PLUGIN_DIR = path.join(__dirname, '..', 'plugins');
   private static readonly client = KimikoClient.getInstance();
   private static readonly logger = new KimikoLogger('PluginManager');
   private pluginPaths: Map<string, string> = new Map();
