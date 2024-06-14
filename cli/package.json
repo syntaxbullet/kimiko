@@ -1,14 +1,15 @@
 {
-  "name": "myplugindependency",
+  "name": "@kimikobot/cli",
   "version": "1.0.0",
-  "description": "just a test plugin",
-  "main": "index.js",
+  "description": "A simple CLI for bootstrapping kimiko plugins",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/node": "^20.14.2",
     "typescript": "^5.4.5"
   }
 }

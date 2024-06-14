@@ -3,7 +3,7 @@ import fs from 'fs';
 
 import { KimikoClient } from './KimikoClient';
 import { KimikoLogger } from './KimikoLogger';
-import { logColors, logType, KimikoRC } from '@kimikobot/types';
+import { logColors, logType } from '@kimikobot/types';
 
 class KimikoPluginManager {
   private static instance: KimikoPluginManager;
