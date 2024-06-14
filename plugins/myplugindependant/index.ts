@@ -3,6 +3,6 @@ import { bakeCookies } from 'myplugindependency';
 const onLoad = (client: any, logger: any) => {
   console.log('[myplugindependant] dependent plugin loaded');
   bakeCookies();
-}
+};
 
 export { onLoad };

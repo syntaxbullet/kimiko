@@ -1,0 +1,9 @@
+'use strict';
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.onLoad = void 0;
+const myplugindependency_1 = require('myplugindependency');
+const onLoad = (client, logger) => {
+  console.log('[myplugindependant] dependent plugin loaded');
+  (0, myplugindependency_1.bakeCookies)();
+};
+exports.onLoad = onLoad;
