@@ -18,6 +18,8 @@ class KimikoLogger {
   }
 
   public log(logType: logType, color?: logColors, ...messages: string[]): void {
+    if (!this.isLogEnabled(logType)) return;
+
     if (this.isConsoleEnabled) {
       console.log(
         `${color || ''}[${logType}] ${this.suffix} ${messages.join(' ')}${logColors.RESET}`,
@@ -28,7 +30,24 @@ class KimikoLogger {
     }
   }
 
+  private isLogEnabled(logType: logType): boolean {
+    const defaultLog = this.config.logging_default.defaultLogTypes.includes(logType);
+    if (!this.config.plugin_log_options || !this.pluginTarget) return defaultLog;
+    if (!this.config.plugin_log_options[this.pluginTarget]) return defaultLog;
+
+    // Check if the config specifically disables for this plugin
+    if (this.config.plugin_log_options[this.pluginTarget].disableLogTypes.includes(logType))
+      return false;
+    // Check if the config specifically enables for this plugin
+    if (this.config.plugin_log_options[this.pluginTarget].enableLogTypes.includes(logType))
+      return true;
+
+    // Use default otherwise
+    return defaultLog;
+  }
+
   private getOption(option: 'logToConsole' | 'logToFile'): boolean {
+    // what is this
     if (this.pluginTarget) {
       return this.config.logging_default[option];
     }

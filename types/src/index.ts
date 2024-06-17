@@ -5,6 +5,15 @@ export type KimikoRC = {
     logToFile: boolean;
     logToConsole: boolean;
     logFilePath: string;
+    defaultLogTypes: logType[];
+  };
+  plugin_log_options?: {
+    [pluginName: string]: {
+      logToFile: boolean;
+      logToConsole: boolean;
+      enableLogTypes: logType[];
+      disableLogTypes: logType[];
+    };
   };
   intents: GatewayIntentBits[];
 };
@@ -79,11 +88,7 @@ export type RadioConfig = {
   options: { label: string; state: boolean }[];
 };
 
-export type ConfigSpec =
-  | IntegerConfig
-  | RealConfig
-  | ToggleConfig
-  | RadioConfig;
+export type ConfigSpec = IntegerConfig | RealConfig | ToggleConfig | RadioConfig;
 
 export interface KimikoPlugin {
   onLoad(client: KimikoClient, logger: KimikoLogger): void;
