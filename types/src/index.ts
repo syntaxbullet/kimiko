@@ -5,6 +5,15 @@ export type KimikoRC = {
     logToFile: boolean;
     logToConsole: boolean;
     logFilePath: string;
+    defaultLogTypes: logType[];
+  };
+  plugin_log_options?: {
+    [pluginName: string]: {
+      logToFile: boolean;
+      logToConsole: boolean;
+      enableLogTypes: logType[];
+      disableLogTypes: logType[];
+    };
   };
   intents: GatewayIntentBits[];
 };

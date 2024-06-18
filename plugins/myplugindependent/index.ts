@@ -1,0 +1,13 @@
+import { bakeCookies } from 'myplugindependency';
+import { KimikoLogger, logType, logColors } from '@kimikobot/types';
+
+const onLoad = (client: any, logger: KimikoLogger) => {
+  logger.log(logType.INFO, logColors.GREEN, 'dependent plugin loaded');
+  logger.log(logType.WARN, logColors.YELLOW, 'example warn log');
+  logger.log(logType.LOG, logColors.WHITE, 'example log log');
+  logger.log(logType.DEBUG, logColors.BLUE, 'example debug log');
+  logger.log(logType.ERROR, logColors.RED, 'example error log');
+  bakeCookies();
+};
+
+export { onLoad };

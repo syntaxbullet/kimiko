@@ -1,5 +1,5 @@
 {
-  "name": "myplugindependant",
+  "name": "myplugindependent",
   "version": "1.0.0",
   "description": "a simple plugin to interact with sqlite",
   "main": "index.js",
@@ -7,7 +7,8 @@
     "build": "tsc"
   },
   "dependencies": {
-    "myplugindependency": "file:../myplugindependency"
+    "myplugindependency": "file:../myplugindependency",
+    "@kimikobot/types": "^0.0.1"
   },
   "author": "",
   "license": "ISC",
