@@ -5,5 +5,7 @@ const onLoad = (client, logger) => {
     console.log('dependency plugin loaded');
 };
 exports.onLoad = onLoad;
-const bakeCookies = () => { console.log('baking cookies'); };
+const bakeCookies = () => {
+    console.log('baking cookies');
+};
 exports.bakeCookies = bakeCookies;

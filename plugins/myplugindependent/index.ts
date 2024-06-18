@@ -8,6 +8,6 @@ const onLoad = (client: any, logger: KimikoLogger) => {
   logger.log(logType.DEBUG, logColors.BLUE, 'example debug log');
   logger.log(logType.ERROR, logColors.RED, 'example error log');
   bakeCookies();
-}
+};
 
 export { onLoad };

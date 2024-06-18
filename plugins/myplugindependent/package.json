@@ -1,5 +1,5 @@
 {
-  "name": "myplugindependant",
+  "name": "myplugindependent",
   "version": "1.0.0",
   "description": "a simple plugin to interact with sqlite",
   "main": "index.js",
