@@ -1,5 +1,5 @@
 import type { KimikoPluginConfig, KimikoPluginManifest } from '@kimikobot/types';
 
-export const Manifest: KimikoPluginConfig = {};
+export const Config: KimikoPluginConfig = {};
 
-export const Config: KimikoPluginManifest = { plugin_dependencies: [] };
+export const Manifest: KimikoPluginManifest = { plugin_dependencies: [] };
