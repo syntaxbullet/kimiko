@@ -51,3 +51,14 @@ export interface KimikoPlugin {
   onLoad(client: KimikoClient, logger: KimikoLogger): void;
   onUnload(): void;
 }
+
+// TODO: Add more types for plugin manifest, discuss which fields are required
+export type KimikoPluginManifest = {
+  name?: string;
+  plugin_dependencies: string[];
+};
+
+// TODO: Add more types for plugin configuration
+export type KimikoPluginConfig = {
+  [key: string]: any;
+};

@@ -33,7 +33,7 @@ class KimikoPluginManager {
 
     const plugins = new Map<string, string>(); // name, path
     for (const pkg of npmPackages) {
-      if (fs.existsSync(path.join(KimikoPluginManager.BOT_ROOT_DIR, pkg, 'pluginrc.ts'))) {
+      if (fs.existsSync(path.join(KimikoPluginManager.BOT_ROOT_DIR, pkg, 'kimiko.pluginrc.ts'))) {
         const pluginPackageJSON = JSON.parse(
           fs.readFileSync(path.join(pkg, 'package.json'), 'utf-8'),
         );
@@ -72,7 +72,7 @@ class KimikoPluginManager {
       const pluginExports = require(pluginPath);
       this.loadedPlugins.set(pluginName, { name: packageJSON.name, exports: pluginExports });
       KimikoPluginManager.logger.log(logType.INFO, logColors.GREEN, `Loaded plugin ${pluginName}`);
-      pluginExports.onLoad(KimikoPluginManager.client, new KimikoLogger(pluginName));
+      pluginExports.default.onLoad(KimikoPluginManager.client, new KimikoLogger(pluginName));
     } catch (error: any) {
       KimikoPluginManager.logger.log(
         logType.ERROR,
