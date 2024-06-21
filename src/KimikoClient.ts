@@ -1,32 +1,19 @@
-import { Client } from 'discord.js';
-import { KimikoRC } from '@kimikobot/types';
-import { config } from './kimikorc';
+import { Client, GatewayIntentBits } from 'discord.js';
+import { parse } from './KimikoConfigManager.js';
+import { KimikoLogger } from './KimikoLogger.js';
 
-/**
- * Represents a client for the Kimiko application.
- */
-class KimikoClient extends Client<true> {
-  private config: KimikoRC;
+type KimikoClient = Client & {
+  logger: KimikoLogger;
+};
 
-  private static instance: KimikoClient;
+const config = parse();
+const logger = new KimikoLogger('Kimiko');
+const client = new Client({
+  intents: [config.intents.map((intent: any) => (GatewayIntentBits[intent] as any))],
+});
 
-  public static getInstance(plugins?: Map<string, any>): KimikoClient {
-    if (!KimikoClient.instance) {
-      KimikoClient.instance = new KimikoClient(config, plugins);
-    }
-    return KimikoClient.instance;
-  }
-
-  public getConfig(): KimikoRC {
-    return { ...this.config };
-  }
-
-  private constructor(config: KimikoRC, plugins?: Map<string, any>) {
-    super({
-      intents: config.intents,
-    });
-    this.config = { ...config };
-  }
-}
+const KimikoClient = client as KimikoClient;
+KimikoClient.logger = logger;
 
 export { KimikoClient };
+

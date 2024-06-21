@@ -1,0 +1,19 @@
+{
+  "logging_defaults": {
+    "log_to_console": true,
+    "log_to_file": false,
+    "log_file_path": "logs",
+    "log_file_name": "kimiko.log",
+    "include_timestamps": true,
+    "timestamp_format": "de-DE",
+    "include_log_level": false,
+    "enabled_log_levels": ["DEBUG", "INFO", "WARN", "ERROR"],
+    "log_level_colors": {
+      "DEBUG": "00FFFF",
+      "INFO": "00FF00",
+      "WARN": "FFFF00",
+      "ERROR": "FF0000"
+    }
+  },
+  "intents": ["Guilds", "GuildMessages", "GuildMembers", "MessageContent"]
+}

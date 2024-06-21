@@ -1,94 +1,112 @@
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
+import { KimikoLogger } from './KimikoLogger.js';
+import dotenv from 'dotenv';
 
-import { KimikoClient } from './KimikoClient';
-import { KimikoLogger } from './KimikoLogger';
-import { logColors, logType } from '@kimikobot/types';
+dotenv.config();
 
-class KimikoPluginManager {
-  private static instance: KimikoPluginManager;
-  private static readonly BOT_ROOT_DIR = path.join(__dirname, '..');
-  private static readonly client = KimikoClient.getInstance();
-  private static readonly logger = new KimikoLogger('PluginManager');
-  private pluginPaths: Map<string, string> = new Map();
-  public loadedPlugins: Map<string, any> = new Map();
+const ROOT_DIR = process.env.KIMIKO_ROOT_DIR as string;
+const PLUGINS_DIR = path.resolve(ROOT_DIR, 'plugins');
+const logger = new KimikoLogger('PluginManager');
 
-  private constructor() {}
 
-  public static getInstance(): KimikoPluginManager {
-    if (!KimikoPluginManager.instance) {
-      KimikoPluginManager.instance = new KimikoPluginManager();
-    }
-
-    return KimikoPluginManager.instance;
-  }
-
-  private findPlugins() {
-    KimikoPluginManager.logger.log(logType.INFO, logColors.GREEN, 'Searching for plugins...');
-    // Check all downloaded npm dependencies for plugins
-    const packageLock = JSON.parse(
-      fs.readFileSync(path.join(KimikoPluginManager.BOT_ROOT_DIR, 'package-lock.json'), 'utf-8'),
-    );
-    const npmPackages = Object.keys(packageLock.packages);
-
-    const plugins = new Map<string, string>(); // name, path
-    for (const pkg of npmPackages) {
-      if (fs.existsSync(path.join(KimikoPluginManager.BOT_ROOT_DIR, pkg, 'kimiko.pluginrc.ts'))) {
-        const pluginPackageJSON = JSON.parse(
-          fs.readFileSync(path.join(pkg, 'package.json'), 'utf-8'),
-        );
-        plugins.set(pluginPackageJSON.name, path.join(KimikoPluginManager.BOT_ROOT_DIR, pkg));
-      }
-    }
-
-    KimikoPluginManager.logger.log(logType.INFO, logColors.GREEN, `Found ${plugins.size} plugins`);
-    plugins.forEach((path, name) => {
-      KimikoPluginManager.logger.log(
-        logType.INFO,
-        logColors.GREEN,
-        `Found plugin ${name} at ${path}`,
-      );
+const unpackNodeModules = () => {
+  // check if a node_modules folder exists in the plugins directory
+  if (fs.existsSync(path.resolve(PLUGINS_DIR, 'node_modules'))) {
+    logger.debug('Unpacking plugins installed via npm...');
+    // if it does, we move all the contents of the node_modules folder to the plugins directory
+    fs.readdirSync(path.resolve(PLUGINS_DIR, 'node_modules')).forEach((file) => {
+      fs.renameSync(path.resolve(PLUGINS_DIR, 'node_modules', file), path.resolve(PLUGINS_DIR, file));
     });
+    // then we remove the empty node_modules folder
+    fs.rmdirSync(path.resolve(PLUGINS_DIR, 'node_modules'));
+  }
+};
 
-    this.pluginPaths = plugins;
+const searchForPlugins = () => {
+  // check if the plugins directory exists
+  if (!fs.existsSync(PLUGINS_DIR)) {
+    // if it doesn't, we create it
+    fs.mkdirSync(PLUGINS_DIR);
+    logger.debug('Created plugins directory');
   }
 
-  private async loadPlugin(pluginName: string, pluginPath: string): Promise<void> {
-    if (this.loadedPlugins.has(pluginName)) return;
+  unpackNodeModules();
 
-    const packageJSONPath = path.join(pluginPath, 'package.json');
-
-    if (!fs.existsSync(packageJSONPath)) {
-      throw new Error(`Plugin ${pluginName} is not installed or does not exist`);
-    }
-    try {
-      const packageJSON = JSON.parse(fs.readFileSync(packageJSONPath, 'utf-8'));
-
-      for (const dep in packageJSON.dependencies) {
-        if (this.pluginPaths.has(dep)) {
-          await this.loadPlugin(dep, this.pluginPaths.get(dep) as string);
-        }
-      }
-      const pluginExports = require(pluginPath);
-      this.loadedPlugins.set(pluginName, { name: packageJSON.name, exports: pluginExports });
-      KimikoPluginManager.logger.log(logType.INFO, logColors.GREEN, `Loaded plugin ${pluginName}`);
-      pluginExports.default.onLoad(KimikoPluginManager.client, new KimikoLogger(pluginName));
-    } catch (error: any) {
-      KimikoPluginManager.logger.log(
-        logType.ERROR,
-        logColors.RED,
-        `Error loading plugin ${pluginName}: ${error.message}`,
-      );
-    }
+  if (fs.readdirSync(PLUGINS_DIR).length === 0) {
+    logger.warn('No plugins found in plugins directory, exiting...');
+    return;
   }
+  // get a list of all the subdirectories in the plugins directory
+  const directories = fs.readdirSync(PLUGINS_DIR).filter((file) => fs.statSync(path.resolve(PLUGINS_DIR, file)).isDirectory());
+  // filter out directories that don't contain a kimiko.pluginrc.json file
+  const pluginDirs = directories.filter((dir) => fs.existsSync(path.resolve(PLUGINS_DIR, dir, 'kimiko.pluginrc.json')));
+  const plugins = new Map<string, string>();
+  pluginDirs.forEach((plugin) => {
+    plugins.set(plugin, path.resolve(PLUGINS_DIR, plugin));
+  });
+  logger.debug(`Found ${plugins.size} plugins...`);
+  return plugins;
+};
 
-  public async loadPlugins(): Promise<Map<string, any>> {
-    this.findPlugins();
-    for (const [pluginName, pluginPath] of this.pluginPaths) {
-      await this.loadPlugin(pluginName, pluginPath);
-    }
-    return this.loadedPlugins;
-  }
+const listDependencies = (plugin: string) => {
+  // each of the plugin directories should have a kimiko.pluginrc.json file that should contain the dependencies in `plugin_dependencies`
+  const pluginConfig = JSON.parse(fs.readFileSync(path.resolve(PLUGINS_DIR, plugin, 'kimiko.pluginrc.json'), 'utf-8'));
+  return pluginConfig.plugin_dependencies;
 }
 
-export { KimikoPluginManager };
+const getEntryPoint = (plugin: string) => {
+  // each of the plugin directories should have a kimiko.pluginrc.json file that should contain the entry point in `entry_point`
+  const pluginConfig = JSON.parse(fs.readFileSync(path.resolve(PLUGINS_DIR, plugin, 'kimiko.pluginrc.json'), 'utf-8'));
+  return pluginConfig.entrypoint;
+}
+
+const loadPlugin = (plugin: string) => {
+  try {
+    loadDependencies(plugin);
+  } catch (error: any) {
+    logger.error(`Failed to load dependencies for plugin ${plugin}`, error);
+  }
+  const entryPoint = getEntryPoint(plugin);
+  // dynamically import the plugin
+  import(path.resolve(PLUGINS_DIR, plugin, entryPoint))
+  .then((module) => {
+    logger.info(`Loaded plugin ${plugin}`);
+    module.main(); // call the main function of the plugin
+  })
+  .catch((error) => {
+    logger.error(`Failed to load plugin ${plugin}`, error, error.stack);
+    throw error;
+  });
+}
+
+const loadDependencies = (plugin: string) => {
+  // get the dependencies for the plugin
+  const dependencies = listDependencies(plugin);
+  // load each of the dependencies
+  dependencies.forEach((dependency: string) => {
+    loadPlugin(dependency);
+  });
+}
+
+const loadPlugins = () => {
+  const loadedPlugins: string[] = []
+  const pluginsToLoad = searchForPlugins();
+  if (!pluginsToLoad) {
+    return;
+  }
+  pluginsToLoad.forEach((plugin) => {
+    if (loadedPlugins.includes(plugin)) {
+      return;
+    }
+    try {
+      loadPlugin(plugin);
+      loadedPlugins.push(plugin);
+    } catch (error: any) {
+      logger.error(`Failed to load plugin ${plugin}`, error);
+    }
+  });
+  return loadedPlugins;
+}
+
+export { loadPlugins, searchForPlugins, listDependencies, getEntryPoint, loadPlugin, loadDependencies, unpackNodeModules, ROOT_DIR, PLUGINS_DIR };
