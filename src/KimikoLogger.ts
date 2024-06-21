@@ -8,6 +8,7 @@ type logLevels = {
   warn: 'WARN';
   error: 'ERROR';
 };
+
 class KimikoLogger {
   private config: any;
 
@@ -16,19 +17,21 @@ class KimikoLogger {
   }
 
   private log(level: logLevels[keyof logLevels], ...messages: string[]) {
-    if (!this.config.logging_defaults.enabled_log_levels.includes(level)) {
+    if (!this.config.loggingDefaults.enabledLogLevels.includes(level)) {
       return;
     }
 
-    const logLevel = this.config.logging_defaults.include_log_level ? chalk.hex(this.config.logging_defaults.log_level_colors[level])(level) : '';
-    const logColor = chalk.hex(this.config.logging_defaults.log_level_colors[level]);
-    const timestamp = this.config.logging_defaults.include_timestamps
-      ? new Date().toLocaleString(this.config.logging_defaults.timestamp_format)
+    const logLevel = this.config.loggingDefaults.includeLogLevel
+      ? chalk.hex(this.config.loggingDefaults.logLevelColors[level])(level)
+      : '';
+    const logColor = chalk.hex(this.config.loggingDefaults.logLevelColors[level]);
+    const timestamp = this.config.loggingDefaults.includeTimestamps
+      ? new Date().toLocaleString(this.config.loggingDefaults.timestampFormat)
       : '';
     const timestampColor = chalk.hex('222222');
     const logMessage = `${logColor(`[${this.config.scope}]`)} ${messages.join(' ')}`;
 
-    if (this.config.logging_defaults.log_to_console) {
+    if (this.config.loggingDefaults.logToConsole) {
       switch (level) {
         case 'DEBUG':
         case 'INFO':
@@ -43,9 +46,9 @@ class KimikoLogger {
       }
     }
 
-    if (this.config.logging_defaults.log_to_file) {
+    if (this.config.loggingDefaults.logToFile) {
       fs.appendFile(
-        `${this.config.logging_defaults.log_file_path}/${this.config.logging_defaults.log_file_name}`,
+        `${this.config.loggingDefaults.logFilePath}/${this.config.loggingDefaults.logFileName}`,
         `${logMessage}\n`,
         (err) => {
           if (err) {
@@ -55,15 +58,19 @@ class KimikoLogger {
       );
     }
   }
+
   public debug(...messages: string[]) {
     this.log('DEBUG', ...messages);
   }
+
   public info(...messages: string[]) {
     this.log('INFO', ...messages);
   }
+
   public warn(...messages: string[]) {
     this.log('WARN', ...messages);
   }
+
   public error(...messages: string[]) {
     this.log('ERROR', ...messages);
   }

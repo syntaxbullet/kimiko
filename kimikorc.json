@@ -1,14 +1,14 @@
 {
-  "logging_defaults": {
-    "log_to_console": true,
-    "log_to_file": false,
-    "log_file_path": "logs",
-    "log_file_name": "kimiko.log",
-    "include_timestamps": true,
-    "timestamp_format": "de-DE",
-    "include_log_level": false,
-    "enabled_log_levels": ["DEBUG", "INFO", "WARN", "ERROR"],
-    "log_level_colors": {
+  "loggingDefaults": {
+    "logToConsole": true,
+    "logToFile": false,
+    "logFilePath": "logs",
+    "logFileName": "kimiko.log",
+    "includeTimestamps": true,
+    "timestampFormat": "de-DE",
+    "includeLogLevel": false,
+    "enabledLogLevels": ["DEBUG", "INFO", "WARN", "ERROR"],
+    "logLevelColors": {
       "DEBUG": "00FFFF",
       "INFO": "00FF00",
       "WARN": "FFFF00",

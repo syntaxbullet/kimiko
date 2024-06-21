@@ -9,11 +9,10 @@ type KimikoClient = Client & {
 const config = parse();
 const logger = new KimikoLogger('Kimiko');
 const client = new Client({
-  intents: [config.intents.map((intent: any) => (GatewayIntentBits[intent] as any))],
+  intents: [config.intents.map((intent: any) => GatewayIntentBits[intent] as any)],
 });
 
 const KimikoClient = client as KimikoClient;
 KimikoClient.logger = logger;
 
 export { KimikoClient };
-
