@@ -57,7 +57,7 @@ const listDependencies = (plugin: string) => {
   const pluginConfig = JSON.parse(
     fs.readFileSync(path.resolve(PLUGINS_DIR, plugin, 'kimiko.pluginrc.json'), 'utf-8'),
   );
-  return pluginConfig.plugin_dependencies;
+  return pluginConfig.pluginDependencies;
 };
 
 const getEntryPoint = (plugin: string) => {
