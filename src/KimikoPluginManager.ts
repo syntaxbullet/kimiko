@@ -103,6 +103,10 @@ const loadDependencies = (plugin: string) => {
 };
 
 const loadPlugins = () => {
+  if (!process.env.KIMIKO_ROOT_DIR) {
+    logger.error('KIMIKO_ROOT_DIR is not defined in the environment variables');
+    process.exit(1);
+  }
   const loadedPlugins: string[] = [];
   const pluginsToLoad = searchForPlugins();
   if (!pluginsToLoad) return;
@@ -119,14 +123,4 @@ const loadPlugins = () => {
   return loadedPlugins;
 };
 
-export {
-  loadPlugins,
-  searchForPlugins,
-  listDependencies,
-  getEntryPoint,
-  loadPlugin,
-  loadDependencies,
-  unpackNodeModules,
-  ROOT_DIR,
-  PLUGINS_DIR,
-};
+export { loadPlugins };

@@ -1,12 +1,16 @@
 import { KimikoLogger } from './KimikoLogger.js';
 import { KimikoClient } from './KimikoClient.js';
+import { loadPlugins } from './KimikoPluginManager.js';
 import { Client } from 'discord.js';
 import dotenv from 'dotenv';
-import { loadPlugins } from './KimikoPluginManager.js';
-
-dotenv.config();
 
 const logger = new KimikoLogger('Kimiko');
+dotenv.config();
+
+if (!process.env.DISCORD_TOKEN) {
+  logger.error('DISCORD_TOKEN is not defined in the environment variables');
+  process.exit(1);
+}
 
 loadPlugins();
 
