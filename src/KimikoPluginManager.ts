@@ -6,121 +6,141 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const ROOT_DIR = process.env.KIMIKO_ROOT_DIR as string;
+const ROOT_DIR = process.env.KIMIKO_ROOT_DIR || process.cwd();
 const PLUGINS_DIR = path.resolve(ROOT_DIR, 'plugins');
 const logger = new KimikoLogger('PluginManager');
 
 const unpackNodeModules = () => {
-  if (fs.existsSync(path.resolve(PLUGINS_DIR, 'node_modules'))) {
+  const pluginModules = path.resolve(PLUGINS_DIR, 'node_modules');
+  if (fs.existsSync(pluginModules)) {
     logger.debug('Unpacking plugins installed via npm...');
-    fs.readdirSync(path.resolve(PLUGINS_DIR, 'node_modules')).forEach((file) => {
-      fs.renameSync(
-        path.resolve(PLUGINS_DIR, 'node_modules', file),
-        path.resolve(PLUGINS_DIR, file),
-      );
+    fs.readdirSync(pluginModules).forEach((plugin) => {
+      fs.renameSync(path.resolve(pluginModules, plugin), path.resolve(PLUGINS_DIR, plugin));
     });
-    fs.rmdirSync(path.resolve(PLUGINS_DIR, 'node_modules'));
+    fs.rmdirSync(pluginModules);
+  }
+};
+
+const createPluginDirectory = () => {
+  if (!fs.existsSync(PLUGINS_DIR)) {
+    logger.info('No plugins directory found, creating one...');
+    fs.mkdirSync(PLUGINS_DIR);
+  } else if (!fs.lstatSync(PLUGINS_DIR).isDirectory()) {
+    logger.error('Failed to create plugins directory, a file with the same name already exists');
+    process.exit(1);
   }
 };
 
 const searchForPlugins = () => {
-  if (!fs.existsSync(PLUGINS_DIR)) {
-    fs.mkdirSync(PLUGINS_DIR);
-    logger.debug('Created plugins directory');
-  }
-
+  createPluginDirectory();
   unpackNodeModules();
-
-  if (fs.readdirSync(PLUGINS_DIR).length === 0) {
-    logger.warn('No plugins found in plugins directory, exiting...');
-    return;
-  }
 
   const directories = fs
     .readdirSync(PLUGINS_DIR)
-    .filter((file) => fs.statSync(path.resolve(PLUGINS_DIR, file)).isDirectory());
+    .filter((file) => fs.lstatSync(path.resolve(PLUGINS_DIR, file)).isDirectory());
 
-  const pluginDirs = directories.filter((dir) =>
+  const pluginDirectories = directories.filter((dir) =>
     fs.existsSync(path.resolve(PLUGINS_DIR, dir, 'kimiko.pluginrc.json')),
   );
 
-  const plugins = new Map<string, string>();
-  pluginDirs.forEach((plugin) => {
-    plugins.set(plugin, path.resolve(PLUGINS_DIR, plugin));
+  const plugins = new Map();
+  pluginDirectories.forEach((dir) => {
+    const packageJsonPath = path.resolve(PLUGINS_DIR, dir, 'package.json');
+    if (!fs.existsSync(packageJsonPath)) {
+      logger.error(`Plugin ${dir} is missing package.json`);
+      return;
+    }
+    const pluginName = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8')).name;
+    plugins.set(pluginName, path.resolve(PLUGINS_DIR, dir));
   });
-
-  logger.debug(`Found ${plugins.size} plugins...`);
   return plugins;
 };
 
-const listDependencies = (plugin: string) => {
-  const pluginConfig = JSON.parse(
-    fs.readFileSync(path.resolve(PLUGINS_DIR, plugin, 'kimiko.pluginrc.json'), 'utf-8'),
-  );
-  return pluginConfig.pluginDependencies;
+const getPluginConfig = (pluginPath: any) => {
+  const pluginConfigPath = path.resolve(pluginPath, 'kimiko.pluginrc.json');
+  if (!fs.existsSync(pluginConfigPath)) {
+    logger.error(`Plugin ${pluginPath} is missing kimiko.pluginrc.json`);
+    return null;
+  }
+  return JSON.parse(fs.readFileSync(pluginConfigPath, 'utf-8'));
 };
 
-const getEntryPoint = (plugin: string) => {
-  const pluginConfig = JSON.parse(
-    fs.readFileSync(path.resolve(PLUGINS_DIR, plugin, 'kimiko.pluginrc.json'), 'utf-8'),
-  );
-  return pluginConfig.entrypoint;
-};
-
-const loadPlugin = (plugin: string) => {
-  const pluginName = plugin.split(path.sep).pop() as string;
-  try {
-    loadDependencies(plugin);
-  } catch (error: any) {
-    logger.error(`Failed to load dependencies for plugin ${plugin}`, error);
+const loadPlugin = async (pluginName: string) => {
+  const pluginPath = searchForPlugins().get(pluginName);
+  if (!pluginPath) {
+    logger.error(`Failed to load plugin ${pluginName}, plugin not found`);
     return;
   }
 
-  const entryPoint = getEntryPoint(plugin);
-  import(path.resolve(PLUGINS_DIR, plugin, entryPoint))
-    .then((module) => {
-      logger.info(`Loaded plugin ${plugin}`);
-      if (module.default) {
-        module.default(KimikoClient, new KimikoLogger(pluginName));
-      } else if (module.main) {
-        logger.warn(`Plugin ${plugin} has no default export, attempting to call main()`);
-        module.main(KimikoClient, new KimikoLogger(pluginName));
-      } else {
-        logger.error(`Plugin ${plugin} has no default export or main() function`);
-      }
-    })
-    .catch((error) => {
-      logger.error(`Failed to load plugin ${plugin}`, error, error.stack);
-      throw error;
-    });
-};
-
-const loadDependencies = (plugin: string) => {
-  const dependencies = listDependencies(plugin);
-  dependencies.forEach((dependency: string) => {
-    loadPlugin(dependency);
-  });
-};
-
-const loadPlugins = () => {
-  if (!process.env.KIMIKO_ROOT_DIR) {
-    logger.error('KIMIKO_ROOT_DIR is not defined in the environment variables');
-    process.exit(1);
+  const pluginConfig = getPluginConfig(pluginPath);
+  if (!pluginConfig) {
+    logger.error(`Failed to load plugin ${pluginName}, plugin config not found`);
+    return;
   }
-  const loadedPlugins: string[] = [];
-  const pluginsToLoad = searchForPlugins();
-  if (!pluginsToLoad) return;
+  const entrypoint = pluginConfig.entrypoint || 'index.js';
+  try {
+    await loadDependencies(pluginName);
+    const module = await import(path.resolve(pluginPath, entrypoint));
+    logger.debug(`Loaded plugin ${pluginName}`);
 
-  pluginsToLoad.forEach((plugin) => {
-    if (loadedPlugins.includes(plugin)) return;
-    try {
-      loadPlugin(plugin);
-      loadedPlugins.push(plugin);
-    } catch (error: any) {
-      logger.error(`Failed to load plugin ${plugin}`, error);
+    if (module.default) {
+      module.default(KimikoClient, new KimikoLogger(pluginName));
+    } else if (module.main) {
+      logger.warn(`Plugin ${pluginName} has no default export, attempting to call main()`);
+      module.main(KimikoClient, new KimikoLogger(pluginName));
+    } else {
+      logger.error(`Plugin ${pluginName} has no default export or main() function`);
     }
-  });
-  return loadedPlugins;
+  } catch (error: any) {
+    logger.error(`Failed to load plugin ${pluginName}`, error);
+  }
 };
 
-export { loadPlugins };
+const loadDependencies = async (pluginName: string) => {
+  const pluginPath = searchForPlugins().get(pluginName);
+  if (!pluginPath) {
+    logger.error(`Failed to load dependencies for ${pluginName}, plugin not found`);
+    return;
+  }
+
+  const pluginConfig = getPluginConfig(pluginPath);
+  if (!pluginConfig) {
+    logger.error(`Failed to load dependencies for ${pluginName}, plugin config not found`);
+    return;
+  }
+
+  if (!pluginConfig.plugin_dependencies) return;
+
+  const dependencies = pluginConfig.plugin_dependencies;
+  logger.debug(`Loading dependencies for ${pluginName}`);
+
+  for (const dependency of dependencies) {
+    await loadPlugin(dependency);
+  }
+};
+
+export const loadPlugins = () => {
+  if (!fs.existsSync(PLUGINS_DIR)) {
+    logger.error('No plugins directory found, skipping plugin search');
+    return;
+  }
+
+  const loadedPlugins: string[] = [];
+  const plugins = searchForPlugins();
+
+  if (!plugins) {
+    logger.error('No plugins found');
+    return;
+  }
+
+  plugins.forEach((_, pluginName) => {
+    if (loadedPlugins.includes(pluginName)) {
+      logger.warn(`Plugin ${pluginName} already loaded, skipping...`);
+      return;
+    }
+
+    logger.debug(`Loading plugin ${pluginName}`);
+    loadedPlugins.push(pluginName);
+    loadPlugin(pluginName);
+  });
+};
