@@ -1,20 +1,21 @@
-import { KimikoClient } from './KimikoClient';
-import { KimikoPluginManager } from './KimikoPluginManager';
-import { logType, logColors } from '@kimikobot/types';
+import { KimikoLogger } from './KimikoLogger.js';
+import { KimikoClient } from './KimikoClient.js';
+import { loadPlugins } from './KimikoPluginManager.js';
+import { Client } from 'discord.js';
 import dotenv from 'dotenv';
-import { Events } from 'discord.js';
-import { KimikoLogger } from './KimikoLogger';
 
+const logger = new KimikoLogger('Kimiko');
 dotenv.config();
 
-const pluginManager = KimikoPluginManager.getInstance();
-const logger = new KimikoLogger('Kimiko');
+if (!process.env.DISCORD_TOKEN) {
+  logger.error('DISCORD_TOKEN is not defined in the environment variables');
+  process.exit(1);
+}
 
-const client = KimikoClient.getInstance(pluginManager.loadedPlugins);
+loadPlugins();
 
-client.once(Events.ClientReady, () => {
-  logger.log(logType.INFO, logColors.GREEN, 'Kimiko is ready');
-  pluginManager.loadPlugins();
+KimikoClient.on('ready', (client: Client) => {
+  logger.info(`Logged in as ${client.user?.tag}!`);
 });
 
-client.login(process.env.DISCORD_TOKEN);
+KimikoClient.login(process.env.DISCORD_TOKEN);

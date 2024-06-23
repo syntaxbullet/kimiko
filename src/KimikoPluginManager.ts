@@ -1,94 +1,162 @@
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
+import { KimikoLogger } from './KimikoLogger.js';
+import { KimikoClient } from './KimikoClient.js';
+import dotenv from 'dotenv';
 
-import { KimikoClient } from './KimikoClient';
-import { KimikoLogger } from './KimikoLogger';
-import { logColors, logType } from '@kimikobot/types';
+dotenv.config();
 
-class KimikoPluginManager {
-  private static instance: KimikoPluginManager;
-  private static readonly BOT_ROOT_DIR = path.join(__dirname, '..');
-  private static readonly client = KimikoClient.getInstance();
-  private static readonly logger = new KimikoLogger('PluginManager');
-  private pluginPaths: Map<string, string> = new Map();
-  public loadedPlugins: Map<string, any> = new Map();
+const ROOT_DIR = process.env.KIMIKO_ROOT_DIR || process.cwd();
+const PLUGINS_DIR = path.resolve(ROOT_DIR, 'plugins');
+const logger = new KimikoLogger('PluginManager');
 
-  private constructor() {}
+type PluginRegistry = Map<string, PluginExports>;
+type PluginExports = Record<string, any> & {
+  default: (client: KimikoClient, logger: KimikoLogger, pluginRegistry: PluginRegistry) => void;
+};
 
-  public static getInstance(): KimikoPluginManager {
-    if (!KimikoPluginManager.instance) {
-      KimikoPluginManager.instance = new KimikoPluginManager();
-    }
+type PluginFileMap = {
+  path: string;
+  packageJSON: Record<string, any> & {
+    main?: string;
+    name: string;
+    version: string;
+    dependencies: string[];
+  };
+  kimikoPluginRC: Record<string, any> & { dependencies: string[] };
+};
 
-    return KimikoPluginManager.instance;
+const pluginRegistry: PluginRegistry = new Map<string, PluginExports>();
+
+async function getPlugins() {
+  const plugins = new Map<string, PluginFileMap>();
+
+  function isDir(dir: string) {
+    return fs.lstatSync(dir).isDirectory();
   }
 
-  private findPlugins() {
-    KimikoPluginManager.logger.log(logType.INFO, logColors.GREEN, 'Searching for plugins...');
-    // Check all downloaded npm dependencies for plugins
-    const packageLock = JSON.parse(
-      fs.readFileSync(path.join(KimikoPluginManager.BOT_ROOT_DIR, 'package-lock.json'), 'utf-8'),
-    );
-    const npmPackages = Object.keys(packageLock.packages);
+  function hasRC(pluginPath: string) {
+    return fs.existsSync(path.resolve(pluginPath, 'kimiko.pluginrc.json'));
+  }
 
-    const plugins = new Map<string, string>(); // name, path
-    for (const pkg of npmPackages) {
-      if (fs.existsSync(path.join(KimikoPluginManager.BOT_ROOT_DIR, pkg, 'kimiko.pluginrc.ts'))) {
-        const pluginPackageJSON = JSON.parse(
-          fs.readFileSync(path.join(pkg, 'package.json'), 'utf-8'),
-        );
-        plugins.set(pluginPackageJSON.name, path.join(KimikoPluginManager.BOT_ROOT_DIR, pkg));
-      }
-    }
+  function isPlugin(pluginPath: string) {
+    return isDir(pluginPath) && hasRC(pluginPath);
+  }
 
-    KimikoPluginManager.logger.log(logType.INFO, logColors.GREEN, `Found ${plugins.size} plugins`);
-    plugins.forEach((path, name) => {
-      KimikoPluginManager.logger.log(
-        logType.INFO,
-        logColors.GREEN,
-        `Found plugin ${name} at ${path}`,
-      );
+  const pluginDirs = fs.readdirSync(PLUGINS_DIR);
+  const pluginPaths = pluginDirs.map((dir) => path.resolve(PLUGINS_DIR, dir));
+  const pluginPathsFiltered = pluginPaths.filter(isPlugin);
+
+  function getJSON(pluginPath: string, fileName: string) {
+    return JSON.parse(fs.readFileSync(path.resolve(pluginPath, fileName), 'utf-8'));
+  }
+
+  pluginPathsFiltered.map((pluginPath) => {
+    const packageJSON = getJSON(pluginPath, 'package.json');
+    const kimikoPluginRC = getJSON(pluginPath, 'kimiko.pluginrc.json');
+    plugins.set(packageJSON.name, { path: pluginPath, packageJSON, kimikoPluginRC });
+  });
+
+  if (plugins.size === 0) {
+    throw new Error('No plugins found.');
+  }
+
+  logger.debug(`Found ${plugins.size} plugins.`);
+
+  return plugins;
+}
+
+function checkDependencies(plugins: Map<string, PluginFileMap>) {
+  logger.debug('Checking plugin dependencies...');
+  const list = Array.from(plugins.keys());
+
+  function getDependencies(plugin: string) {
+    return plugins.get(plugin)!.kimikoPluginRC.dependencies;
+  }
+
+  function isMissingDependency(plugin: string) {
+    return getDependencies(plugin).some(function (dep) {
+      return !list.includes(dep);
     });
-
-    this.pluginPaths = plugins;
   }
 
-  private async loadPlugin(pluginName: string, pluginPath: string): Promise<void> {
-    if (this.loadedPlugins.has(pluginName)) return;
+  const missingDependencies = list.filter((plugin) => isMissingDependency(plugin));
 
-    const packageJSONPath = path.join(pluginPath, 'package.json');
-
-    if (!fs.existsSync(packageJSONPath)) {
-      throw new Error(`Plugin ${pluginName} is not installed or does not exist`);
-    }
-    try {
-      const packageJSON = JSON.parse(fs.readFileSync(packageJSONPath, 'utf-8'));
-
-      for (const dep in packageJSON.dependencies) {
-        if (this.pluginPaths.has(dep)) {
-          await this.loadPlugin(dep, this.pluginPaths.get(dep) as string);
-        }
-      }
-      const pluginExports = require(pluginPath);
-      this.loadedPlugins.set(pluginName, { name: packageJSON.name, exports: pluginExports });
-      KimikoPluginManager.logger.log(logType.INFO, logColors.GREEN, `Loaded plugin ${pluginName}`);
-      pluginExports.default.onLoad(KimikoPluginManager.client, new KimikoLogger(pluginName));
-    } catch (error: any) {
-      KimikoPluginManager.logger.log(
-        logType.ERROR,
-        logColors.RED,
-        `Error loading plugin ${pluginName}: ${error.message}`,
-      );
-    }
+  if (missingDependencies.length > 0) {
+    logger.error(
+      `The following plugins have missing dependencies: ${missingDependencies.join(', ')}`,
+    );
+    process.exit(1);
   }
 
-  public async loadPlugins(): Promise<Map<string, any>> {
-    this.findPlugins();
-    for (const [pluginName, pluginPath] of this.pluginPaths) {
-      await this.loadPlugin(pluginName, pluginPath);
-    }
-    return this.loadedPlugins;
+  return plugins;
+}
+
+function topologicalSort(plugins: Map<string, PluginFileMap>) {
+  logger.debug('Sorting plugins...');
+  const list = Array.from(plugins.keys());
+  const dependencies = list.map((plugin) => plugins.get(plugin)!.kimikoPluginRC.dependencies);
+  const order: string[] = [];
+  const visited: Set<string> = new Set();
+
+  function isCyclic(plugin: string) {
+    return dependencies[list.indexOf(plugin)].includes(plugin);
+  }
+
+  const cyclicDependencies = list.filter(isCyclic);
+
+  if (cyclicDependencies.length > 0) {
+    logger.error(`Cannot resolve cyclic dependencies: ${cyclicDependencies.join(', ')}`);
+    process.exit(1);
+  }
+
+  const visit = (plugin: string) => {
+    if (visited.has(plugin)) return;
+
+    visited.add(plugin);
+    dependencies[list.indexOf(plugin)].forEach(visit);
+    order.push(plugin);
+  };
+
+  list.forEach(visit);
+  logger.debug(`Plugins sorted: ${order.join(' -> ')} `);
+  return { order, plugins };
+}
+
+async function loadPlugin(plugin: string, plugins: Map<string, PluginFileMap>) {
+  logger.debug(`Loading plugin: ${plugin}`);
+  const pluginPath = plugins.get(plugin)!.path;
+  const entryPoint = plugins.get(plugin)!.packageJSON.main || 'index.js';
+
+  const pluginExports = (await import(path.resolve(pluginPath, entryPoint))) as PluginExports;
+
+  pluginRegistry.set(plugin, pluginExports);
+  logger.debug(`Plugin ${plugin} loaded.`);
+
+  pluginExports.default(
+    KimikoClient,
+    new KimikoLogger(plugins.get(plugin)!.packageJSON.name),
+    pluginRegistry,
+  );
+}
+
+async function loadPluginsInOrder(order: string[], plugins: Map<string, PluginFileMap>) {
+  for (const plugin of order) {
+    await loadPlugin(plugin, plugins);
   }
 }
 
-export { KimikoPluginManager };
+export function loadPlugins() {
+  if (!fs.existsSync(PLUGINS_DIR)) {
+    logger.error('Plugins directory not found.');
+    process.exit(1);
+  }
+
+  getPlugins()
+    .then((plugins) => checkDependencies(plugins))
+    .then((plugins) => topologicalSort(plugins))
+    .then(({ order, plugins }) => loadPluginsInOrder(order, plugins))
+    .catch((err) => {
+      logger.error('Failed to load plugins', err.stack);
+    });
+}

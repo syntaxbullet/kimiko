@@ -1,81 +1,78 @@
-import { config } from './kimikorc';
-import { KimikoRC, logColors, logType } from '@kimikobot/types';
+import { parse } from './KimikoConfigManager.js';
+import chalk from 'chalk';
 import fs from 'fs';
 
-class KimikoLogger {
-  private readonly config: KimikoRC;
-  private readonly pluginTarget: string | null;
-  private isConsoleEnabled: boolean;
-  private isFileEnabled: boolean;
-  private suffix: string;
+type logLevels = {
+  debug: 'DEBUG';
+  info: 'INFO';
+  warn: 'WARN';
+  error: 'ERROR';
+};
 
-  constructor(pluginTarget: string | null) {
-    this.config = config;
-    this.pluginTarget = pluginTarget;
-    this.suffix = this.pluginTarget ? `[${this.pluginTarget}]` : '';
-    this.isConsoleEnabled = this.getConsoleEnabled();
-    this.isFileEnabled = this.getFileEnabled();
+class KimikoLogger {
+  private config: any;
+
+  constructor(scope: string) {
+    this.config = { ...parse(), scope };
   }
 
-  public log(logType: logType, color?: logColors, ...messages: string[]): void {
-    if (!this.isLogEnabled(logType)) return;
+  private log(level: logLevels[keyof logLevels], ...messages: string[]) {
+    if (!this.config.loggingDefaults.enabledLogLevels.includes(level)) {
+      return;
+    }
 
-    if (this.isConsoleEnabled) {
-      console.log(
-        `${color || ''}[${logType}] ${this.suffix} ${messages.join(' ')}${logColors.RESET}`,
+    const logLevel = this.config.loggingDefaults.includeLogLevel
+      ? chalk.hex(this.config.loggingDefaults.logLevelColors[level])(level)
+      : '';
+    const logColor = chalk.hex(this.config.loggingDefaults.logLevelColors[level]);
+    const timestamp = this.config.loggingDefaults.includeTimestamps
+      ? new Date().toLocaleString(this.config.loggingDefaults.timestampFormat)
+      : '';
+    const timestampColor = chalk.hex('222222');
+    const logMessage = `${logColor(`[${this.config.scope}]`)} ${messages.join(' ')}`;
+
+    if (this.config.loggingDefaults.logToConsole) {
+      switch (level) {
+        case 'DEBUG':
+        case 'INFO':
+          console.log(`${timestampColor(timestamp)} ${logLevel} ${logMessage}`);
+          break;
+        case 'WARN':
+          console.warn(`${timestampColor(timestamp)} ${logLevel} ${logMessage}`);
+          break;
+        case 'ERROR':
+          console.error(`${timestampColor(timestamp)} ${logLevel} ${logMessage}`);
+          break;
+      }
+    }
+
+    if (this.config.loggingDefaults.logToFile) {
+      fs.appendFile(
+        `${this.config.loggingDefaults.logFilePath}/${this.config.loggingDefaults.logFileName}`,
+        `${logMessage}\n`,
+        (err) => {
+          if (err) {
+            console.error('Failed to write to log file', err.message);
+          }
+        },
       );
     }
-    if (this.isFileEnabled) {
-      this.logToFile(logType, ...messages);
-    }
   }
 
-  private isLogEnabled(logType: logType): boolean {
-    const defaultLog = this.config.logging_default.defaultLogTypes.includes(logType);
-    if (!this.config.plugin_log_options || !this.pluginTarget) return defaultLog;
-    if (!this.config.plugin_log_options[this.pluginTarget]) return defaultLog;
-
-    // Check if the config specifically disables for this plugin
-    if (this.config.plugin_log_options[this.pluginTarget].disableLogTypes.includes(logType))
-      return false;
-    // Check if the config specifically enables for this plugin
-    if (this.config.plugin_log_options[this.pluginTarget].enableLogTypes.includes(logType))
-      return true;
-
-    // Use default otherwise
-    return defaultLog;
+  public debug(...messages: string[]) {
+    this.log('DEBUG', ...messages);
   }
 
-  private getOption(option: 'logToConsole' | 'logToFile'): boolean {
-    // what is this
-    if (this.pluginTarget) {
-      return this.config.logging_default[option];
-    }
-    return this.config.logging_default[option];
+  public info(...messages: string[]) {
+    this.log('INFO', ...messages);
   }
 
-  private getConsoleEnabled(): boolean {
-    return this.getOption('logToConsole');
+  public warn(...messages: string[]) {
+    this.log('WARN', ...messages);
   }
 
-  private getFileEnabled(): boolean {
-    return this.getOption('logToFile');
-  }
-
-  private logToFile(logType: logType, ...messages: string[]): void {
-    const logFilePath = this.getLogFilePath();
-    const logMessage = `[${logType}] [${this.suffix}] ${messages.join(' ')}\n`;
-    fs.appendFile(logFilePath, logMessage, (err) => {
-      if (err) {
-        console.error(`Error writing to log file: ${err}`);
-      }
-    });
-  }
-
-  private getLogFilePath(): string {
-    return this.pluginTarget
-      ? `${this.config.logging_default.logFilePath}/${this.pluginTarget}.log`
-      : `${this.config.logging_default.logFilePath}/kimiko.log`;
+  public error(...messages: string[]) {
+    this.log('ERROR', ...messages);
   }
 }
 
