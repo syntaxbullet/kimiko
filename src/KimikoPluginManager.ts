@@ -10,68 +10,77 @@ const ROOT_DIR = process.env.KIMIKO_ROOT_DIR || process.cwd();
 const PLUGINS_DIR = path.resolve(ROOT_DIR, 'plugins');
 const logger = new KimikoLogger('PluginManager');
 
-type PluginMap = Map<string, PluginExports>;
-type PluginExports = object & {
-  default?: (client: KimikoClient, logger: KimikoLogger, pluginRegistry: PluginMap) => void;
+type PluginRegistry = Map<string, PluginExports>;
+type PluginExports = Record<string, any> & {
+  default: (client: KimikoClient, logger: KimikoLogger, pluginRegistry: PluginRegistry) => void;
 };
+
 type PluginFileMap = {
   path: string;
-  packageJSON: Record<string, any>;
-  kimikoPluginRC: Record<string, any>;
+  packageJSON: Record<string, any> & {
+    main?: string;
+    name: string;
+    version: string;
+    dependencies: string[];
+  };
+  kimikoPluginRC: Record<string, any> & { dependencies: string[] };
 };
 
-const pluginRegistry: PluginMap = new Map<string, PluginExports>();
+const pluginRegistry: PluginRegistry = new Map<string, PluginExports>();
 
-async function getAllPlugins() {
+async function getPlugins() {
   const plugins = new Map<string, PluginFileMap>();
+
   const isDir = (dir: string) => fs.lstatSync(dir).isDirectory();
   const hasRC = (pluginPath: string) =>
     fs.existsSync(path.resolve(pluginPath, 'kimiko.pluginrc.json'));
   const isPlugin = (pluginPath: string) => isDir(pluginPath) && hasRC(pluginPath);
 
-  const pluginDirs = fs
-    .readdirSync(PLUGINS_DIR)
-    .map((dir) => path.resolve(PLUGINS_DIR, dir))
-    .filter(isPlugin);
+  const pluginDirs = fs.readdirSync(PLUGINS_DIR);
+  const pluginPaths = pluginDirs.map((dir) => path.resolve(PLUGINS_DIR, dir));
+  const pluginPathsFiltered = pluginPaths.filter(isPlugin);
 
-  pluginDirs.map((pluginDir) => {
-    const packageJSON = JSON.parse(
-      fs.readFileSync(path.resolve(pluginDir, 'package.json'), 'utf-8'),
-    );
-    const kimikoPluginRC = JSON.parse(
-      fs.readFileSync(path.resolve(pluginDir, 'kimiko.pluginrc.json'), 'utf-8'),
-    );
-    plugins.set(packageJSON.name, {
-      path: pluginDir,
-      packageJSON,
-      kimikoPluginRC,
-    });
+  const getJSON = (pluginPath: string, fileName: string) => {
+    return JSON.parse(fs.readFileSync(path.resolve(pluginPath, fileName), 'utf-8'));
+  };
+
+  pluginPathsFiltered.map((pluginPath) => {
+    const packageJSON = getJSON(pluginPath, 'package.json');
+    const kimikoPluginRC = getJSON(pluginPath, 'kimiko.pluginrc.json');
+    plugins.set(packageJSON.name, { path: pluginPath, packageJSON, kimikoPluginRC });
   });
+
   if (plugins.size === 0) {
     throw new Error('No plugins found.');
   }
+
   logger.debug(`Found ${plugins.size} plugins.`);
+
   return plugins;
 }
 
-// 1. check if all plugins have their dependencies met.
-const checkDependencies = (plugins: Map<string, PluginFileMap>) => {
+function checkDependencies(plugins: Map<string, PluginFileMap>) {
   logger.debug('Checking plugin dependencies...');
   const list = Array.from(plugins.keys());
-  const missingDependencies = list.filter((plugin) => {
-    const dependencies = plugins.get(plugin)!.kimikoPluginRC.dependencies;
-    return dependencies.some((dep: string) => !list.includes(dep));
-  });
+  const getDependencies = (plugin: string) => plugins.get(plugin)!.kimikoPluginRC.dependencies;
+
+  const isMissingDependency = (plugin: string) => {
+    return getDependencies(plugin).some((dep: string) => !list.includes(dep));
+  };
+
+  const missingDependencies = list.filter((plugin) => isMissingDependency(plugin));
+
   if (missingDependencies.length > 0) {
     logger.error(
       `The following plugins have missing dependencies: ${missingDependencies.join(', ')}`,
     );
     process.exit(1);
   }
+
   return plugins;
-};
-// 2. perform a topological sort on the plugins to ensure that dependencies are loaded first.
-const topologicalSort = (plugins: Map<string, PluginFileMap>) => {
+}
+
+function topologicalSort(plugins: Map<string, PluginFileMap>) {
   logger.debug('Sorting plugins...');
   const list = Array.from(plugins.keys());
   const dependencies = list.map((plugin) => plugins.get(plugin)!.kimikoPluginRC.dependencies);
@@ -79,34 +88,36 @@ const topologicalSort = (plugins: Map<string, PluginFileMap>) => {
   const visited: Set<string> = new Set();
   const isCyclic = (plugin: string) => dependencies[list.indexOf(plugin)].includes(plugin);
   const cyclicDependencies = list.filter(isCyclic);
+
   if (cyclicDependencies.length > 0) {
-    logger.error(
-      `The following plugins have cyclic dependencies: ${cyclicDependencies.join(', ')}`,
-    );
+    logger.error(`Cannot resolve cyclic dependencies: ${cyclicDependencies.join(', ')}`);
     process.exit(1);
   }
+
   const visit = (plugin: string) => {
     if (visited.has(plugin)) return;
+
     visited.add(plugin);
-    dependencies[list.indexOf(plugin)].forEach(visit);
+    dependencies[list.indexOf(plugin)].map(visit);
     order.push(plugin);
   };
 
-  list.forEach(visit);
+  list.map(visit);
   logger.debug(`Plugins sorted: ${order.join(' -> ')} `);
-
   return { order, plugins };
-};
+}
 
-// 3. load the plugins in the correct order.
 async function loadPlugin(plugin: string, plugins: Map<string, PluginFileMap>) {
   logger.debug(`Loading plugin: ${plugin}`);
   const pluginPath = plugins.get(plugin)!.path;
   const entryPoint = plugins.get(plugin)!.packageJSON.main || 'index.js';
+
   const pluginExports = (await import(path.resolve(pluginPath, entryPoint))) as PluginExports;
+
   pluginRegistry.set(plugin, pluginExports);
   logger.debug(`Plugin ${plugin} loaded.`);
-  pluginExports.default?.(
+
+  pluginExports.default(
     KimikoClient,
     new KimikoLogger(plugins.get(plugin)!.packageJSON.name),
     pluginRegistry,
@@ -125,7 +136,7 @@ export function loadPlugins() {
     process.exit(1);
   }
 
-  getAllPlugins()
+  getPlugins()
     .then((plugins) => checkDependencies(plugins))
     .then((plugins) => topologicalSort(plugins))
     .then(({ order, plugins }) => loadPluginsInOrder(order, plugins))
