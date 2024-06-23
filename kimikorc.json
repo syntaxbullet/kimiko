@@ -6,7 +6,7 @@
     "logFileName": "kimiko.log",
     "includeTimestamps": true,
     "timestampFormat": "de-DE",
-    "includeLogLevel": false,
+    "includeLogLevel": true,
     "enabledLogLevels": ["DEBUG", "INFO", "WARN", "ERROR"],
     "logLevelColors": {
       "DEBUG": "00FFFF",
