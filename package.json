@@ -1,0 +1,20 @@
+{
+  "name": "kimiko",
+  "version": "1.0.0",
+  "description": "A discord bot for personal use.",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "format": "npx prettier ./src/**/* --write",
+    "dev": "nodemon"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^22.9.3",
+    "nodemon": "^3.1.7",
+    "prettier": "^3.3.3",
+    "typescript": "^5.7.2"
+  }
+}
