@@ -1,5 +1,6 @@
 import { Client, GatewayIntentBits, Events } from 'discord.js';
 import { config as dotenvConfig } from 'dotenv';
+import { KimikoScheduler } from './KimikoScheduler';
 
 // Load environment variables as early as possible
 dotenvConfig();
@@ -8,9 +9,9 @@ dotenvConfig();
  * KimikoClient class extends the Discord.js Client with predefined intents.
  * It provides a singleton instance for the application.
  */
-class KimikoClient extends Client {
+export class KimikoClient extends Client {
     private static instance: KimikoClient;
-
+    public scheduler: KimikoScheduler = new KimikoScheduler();
     /**
      * Creates an instance of KimikoClient with specified intents.
      * The constructor is private to enforce the singleton pattern.
@@ -25,7 +26,6 @@ class KimikoClient extends Client {
                 GatewayIntentBits.MessageContent
             ],
         });
-        
         // Handle the 'ready' event
         this.once(Events.ClientReady, () => {
             console.log(`Logged in as ${this.user?.tag}!`);
@@ -69,6 +69,3 @@ class KimikoClient extends Client {
         }
     }
 }
-
-// Export an instance of KimikoClient
-export const kimikoClient = KimikoClient.getInstance();

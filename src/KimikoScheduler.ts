@@ -131,6 +131,3 @@ export class KimikoScheduler extends EventEmitter {
         schedule(delay);
     }
 }
-
-// Export an instance of the scheduler
-export const kimikoScheduler = new KimikoScheduler();
