@@ -5,18 +5,18 @@ dotenvConfig()
 /**
  * Represents the role of a message sender.
  */
-type Role = 'user' | 'assistant' | 'system'
+export type Role = 'user' | 'assistant' | 'system'
 
 /**
  * Interface for the message within each choice.
  */
-interface ChoiceMessage {
+export interface ChoiceMessage {
     /** The role of the message sender. */
     role: Role
     /** The content of the message. */
     content: string
 
-    /** function calls */
+    /** tool calls */
     tool_calls?: {
         id: string
         type: 'function'
@@ -27,7 +27,7 @@ interface ChoiceMessage {
 /**
  * Interface for each choice in the choices array.
  */
-interface Choice {
+export interface Choice {
     /** The index of the choice. */
     index: number
     /** The message associated with the choice. */
@@ -41,7 +41,7 @@ interface Choice {
 /**
  * Interface for the usage object detailing token and time metrics.
  */
-interface Usage {
+export interface Usage {
     /** Time spent in the queue before processing. */
     queue_time: number
     /** Number of tokens in the prompt. */
@@ -61,7 +61,7 @@ interface Usage {
 /**
  * Interface for the x_groq object.
  */
-interface XGroq {
+export interface XGroq {
     /** The unique identifier for the Groq request. */
     id: string
 }
@@ -91,7 +91,7 @@ export interface CompletionResponse {
 /**
  * Interface representing the payload for LLM requests.
  */
-interface LLMRequestPayload {
+export interface LLMRequestPayload {
     /** Base URL for the API endpoint. */
     baseURL?: string
     /** Frequency penalty applied during generation. */
@@ -112,7 +112,7 @@ interface LLMRequestPayload {
     parallel_tool_calls?: boolean | null
     /** Presence penalty applied during generation. */
     presence_penalty?: number | null
-    /** Format of the response. */
+    /** Format of the response. Allows usage of JSON mode. */
     response_format?: { type: 'json_object' } | null
     /** Seed for random number generation to ensure determinism. */
     seed?: number | null
@@ -159,7 +159,7 @@ export class KimikoAgent {
      * The threshold for summarizing messages, starting with the oldest.
      * @private
      */
-    private summaryThreshold: number = 3
+    private summaryThreshold: number = 10
 
     /**
      * The current context of the conversation.
@@ -237,6 +237,7 @@ export class KimikoAgent {
         messages: ChoiceMessage[]
     ): Promise<ChoiceMessage> {
         // Define the summary prompt
+        console.log(`Summarizing...`)
         const summaryPrompt = `Summarize the following conversation concisely:\n\n${messages.map((msg) => `${msg.role}: ${msg.content}`).join('\n')}`
 
         // Create a temporary payload for summarization
@@ -259,7 +260,7 @@ export class KimikoAgent {
             const summaryContent = response.choices[0].message.content
             return {
                 role: 'assistant',
-                content: `Summary: ${summaryContent}`,
+                content: `<Summary>${summaryContent}</Summary>`,
             }
         } else {
             throw new Error(

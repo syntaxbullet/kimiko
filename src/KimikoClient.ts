@@ -1,6 +1,7 @@
 import { Client, GatewayIntentBits, Events } from 'discord.js';
 import { config as dotenvConfig } from 'dotenv';
 import { KimikoScheduler } from './KimikoScheduler';
+import { KimikoMemoryAgent } from './KimikoMemoryAgent';
 
 // Load environment variables as early as possible
 dotenvConfig();
@@ -11,7 +12,9 @@ dotenvConfig();
  */
 export class KimikoClient extends Client {
     private static instance: KimikoClient;
+    
     public scheduler: KimikoScheduler = new KimikoScheduler();
+    public memory: KimikoMemoryAgent = new KimikoMemoryAgent();
     /**
      * Creates an instance of KimikoClient with specified intents.
      * The constructor is private to enforce the singleton pattern.
@@ -23,7 +26,9 @@ export class KimikoClient extends Client {
                 GatewayIntentBits.DirectMessageReactions,
                 GatewayIntentBits.DirectMessageTyping,
                 GatewayIntentBits.DirectMessagePolls,
-                GatewayIntentBits.MessageContent
+                GatewayIntentBits.MessageContent,
+                GatewayIntentBits.GuildMessageTyping,
+                GatewayIntentBits.GuildMessages
             ],
         });
         // Handle the 'ready' event
