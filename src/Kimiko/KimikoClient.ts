@@ -1,22 +1,22 @@
-import { Client, GatewayIntentBits, Events } from 'discord.js';
+import { Client, GatewayIntentBits, Events } from "discord.js";
 import { config as dotenvConfig } from 'dotenv';
-import { KimikoScheduler } from './KimikoScheduler';
 
 // Load environment variables as early as possible
 dotenvConfig();
 
 /**
- * KimikoClient class extends the Discord.js Client with predefined intents.
- * It provides a singleton instance for the application.
+ * Discord client implementation for Kimiko bot.
+ * Handles Discord-specific functionality including authentication, message handling,
+ * and event management. Configured with direct message and content intents.
+ * 
+ * @extends {Client} Discord.js Client class
  */
 export class KimikoClient extends Client {
-    private static instance: KimikoClient;
-    public scheduler: KimikoScheduler = new KimikoScheduler();
     /**
-     * Creates an instance of KimikoClient with specified intents.
-     * The constructor is private to enforce the singleton pattern.
+     * Creates a new KimikoClient instance.
+     * Sets up required intents and event handlers for Discord interaction.
      */
-    private constructor() {
+    constructor() {
         super({
             intents: [
                 GatewayIntentBits.DirectMessages,
@@ -35,17 +35,6 @@ export class KimikoClient extends Client {
         this.on(Events.Error, (error) => {
             console.error('Discord client error:', error);
         });
-    }
-
-      /**
-     * Retrieves the singleton instance of KimikoClient.
-     * @returns The KimikoClient instance.
-     */
-      public static getInstance(): KimikoClient {
-        if (!KimikoClient.instance) {
-            KimikoClient.instance = new KimikoClient();
-        }
-        return KimikoClient.instance;
     }
 
     /**
