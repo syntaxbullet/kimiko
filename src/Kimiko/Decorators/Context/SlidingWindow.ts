@@ -1,4 +1,4 @@
-import { Kimiko } from "../../";
+import { Kimiko } from "../..";
 import { Message } from "discord.js";
 
 /**
