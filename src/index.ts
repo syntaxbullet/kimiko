@@ -23,7 +23,10 @@ let BaseAgent = new Kimiko.KimikoAgent({
     ],
 })
 
+// add the logging decorator to the agent such that all messages are logged for debugging
 const withLogging = new Kimiko.Decorators.LoggingAgent(BaseAgent);
+// to test it we also apply the sliding window decorator to the agent, such that only the last 3 messages are sent to the LLM
+// and the oldest one is removed. it is not practical to use this but it is useful for testing the decorator
 const PersonalityAgent = new Kimiko.Decorators.Context.SlidingWindow(
     withLogging,
     3
