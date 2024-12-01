@@ -1,13 +1,53 @@
-import { Events, Message } from 'discord.js'
-import { KimikoClient } from './KimikoClient'
-import { ResponderAgent } from './agents/ResponderAgent'
-import MemoryAgent from './agents/MemoryAgent'
-import fs from 'fs'
-import path from 'path'
-import { LLM } from './KimikoAgent'
+import { Client, Events } from 'discord.js'
+import { Kimiko } from './Kimiko'
 
-const bot = new KimikoClient()
+import { config as dotenvConfig } from 'dotenv';
 
-const FunctionResponderAgent = new ResponderAgent(false)
-const ToolResponderAgent = new ResponderAgent(true)
+// Load environment variables from .env file
+dotenvConfig();
 
+const TARGET_USER_ID = process.env.DISCORD_USER_ID;
+
+const client = new Kimiko.KimikoClient();
+
+let BaseAgent = new Kimiko.KimikoAgent({
+    model: 'llama-3.1-70b-specdec',
+    max_tokens: 500,
+    temperature: 0.3,
+    messages: [
+        {
+            role: 'system',
+            content:
+                'You are Kimiko, a helpful and friendly personal assistant. Use emoji and humour when responding to the user',
+        },
+    ],
+})
+
+const withLogging = new Kimiko.Decorators.LoggingAgent(BaseAgent);
+const PersonalityAgent = new Kimiko.Decorators.Context.SlidingWindow(
+    withLogging,
+    3
+);
+
+client.once(Events.ClientReady, async (client: Client) => {
+    try {
+        const user = await client.users.fetch(TARGET_USER_ID as string);
+        await user.send('Hello!');
+        await client.user?.setPresence({ status: 'online' });
+        console.log(`Logged in as ${client.user?.tag}!`);
+    } catch (error) {
+        console.error('Error during ClientReady event:', error);
+    }
+});
+
+client.on(Events.MessageCreate, async (message) => {
+    PersonalityAgent.addMessage(message)
+    if (message.author.bot) return
+    if (message.channel.isSendable()) {
+        message.channel.sendTyping()
+        const response = await PersonalityAgent.send()
+        message.channel.send(response.choices[0].message.content)
+    }
+})
+
+client.login()

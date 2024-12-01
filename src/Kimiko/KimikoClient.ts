@@ -4,7 +4,18 @@ import { config as dotenvConfig } from 'dotenv';
 // Load environment variables as early as possible
 dotenvConfig();
 
+/**
+ * Discord client implementation for Kimiko bot.
+ * Handles Discord-specific functionality including authentication, message handling,
+ * and event management. Configured with direct message and content intents.
+ * 
+ * @extends {Client} Discord.js Client class
+ */
 export class KimikoClient extends Client {
+    /**
+     * Creates a new KimikoClient instance.
+     * Sets up required intents and event handlers for Discord interaction.
+     */
     constructor() {
         super({
             intents: [
@@ -25,13 +36,14 @@ export class KimikoClient extends Client {
             console.error('Discord client error:', error);
         });
     }
-      /**
+
+    /**
      * Logs in to Discord using the bot token.
      * @param token - The bot token to log in with. If not provided, uses DISCORD_APP_TOKEN from environment variables.
      * @returns A promise that resolves with the bot's token if the login is successful.
      * @throws Will throw an error if the bot token is missing or invalid.
      */
-      public async login(token?: string): Promise<string> {
+    public async login(token?: string): Promise<string> {
         const loginToken = token || process.env.DISCORD_APP_TOKEN;
         if (!loginToken) {
             throw new Error('DISCORD_APP_TOKEN environment variable is not set.');
