@@ -3,8 +3,14 @@ import { config as dotEnvConfig } from 'dotenv'
 
 dotEnvConfig()
 
+export type BaseAgent = {
+    send: () => Promise<LLM.CompletionResponse>;
+    addMessage: (message: LLM.ChoiceMessage | Message) => Promise<LLM.ChoiceMessage>;
+    addToolResult: (result: { content: string , fnName: string, id: string }) => LLM.ChoiceMessage;
+    convert: (message: Message) => LLM.ChoiceMessage;
+}
 export namespace LLM {
-    export type Role = 'user' | 'assistant' | 'system'
+    export type Role = 'user' | 'assistant' | 'system' | 'tool'
     export interface ChoiceMessage {
         role: Role
         content: string
@@ -13,6 +19,8 @@ export namespace LLM {
             type: 'function'
             function: { name: string; arguments?: string }
         }[]
+        tool_call_id?: string
+        name?: string
     }
     export interface Choice {
         index: number
@@ -241,7 +249,7 @@ export class KimikoAgentBuilder {
         this.config = new KimikoAgentConfig()
     }
 
-    public build() {
+    public build(): BaseAgent {
         if (!this.messages) {
             throw new Error(
                 'Required field missing: messages must be set before building.'
@@ -282,7 +290,7 @@ export class KimikoAgentBuilder {
                     return await response.json()
                 } catch (error: any) {
                     throw new Error(
-                        `Failed to send request to ${this.config.baseURL} with payload ${JSON.stringify(payload)}: ${error.message}`
+                        `Failed to send request: ${error.message}`
                     )
                 }
             },
@@ -298,6 +306,10 @@ export class KimikoAgentBuilder {
                 }
                 this.messages.push(message)
                 return message
+            },
+            addToolResult: (result: { content: string , fnName: string, id: string }): LLM.ChoiceMessage => {
+                this.messages.push({ role: "tool", content: result.content, tool_call_id: result.id, name: result.fnName })
+                return { role: "tool", content: result.content, tool_call_id: result.id, name: result.fnName }
             },
             convert: (message: Message): LLM.ChoiceMessage => {
                 const role: LLM.Role = message.author.bot ? 'assistant' : 'user'
