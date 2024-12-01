@@ -4,6 +4,7 @@ import { LoggingAgentDecorator } from './Decorators/LoggingAgent'
 import { SlidingWindowDecorator } from './Decorators/Context/SlidingWindow'
 import { KimikoClient as Client } from './KimikoClient'
 import { BaseAgent } from './KimikoBaseAgent'
+import { UserProfileDecorator } from './Decorators/Context/UserProfile'
 
 /**
  * Main namespace for the Kimiko bot framework.
@@ -155,7 +156,7 @@ export namespace Kimiko {
             /**
              * String parameter type for tool parameters.
              */
-            export type JSONSchemaString = { type: 'string'; enum?: string[] }
+            export type JSONSchemaString = { type: 'string'; enum?: string[], description?: string }
 
             /**
              * Number parameter type for tool parameters.
@@ -163,12 +164,13 @@ export namespace Kimiko {
             export type JSONSchemaNumber = {
                 type: 'number' | 'integer'
                 enum?: number[]
+                description?: string
             }
 
             /**
              * Boolean parameter type for tool parameters.
              */
-            export type JSONSchemaBoolean = { type: 'boolean' }
+            export type JSONSchemaBoolean = { type: 'boolean'; description?: string }
 
             /**
              * Object parameter type for tool parameters.
@@ -181,6 +183,7 @@ export namespace Kimiko {
             export type JSONSchemaArray = {
                 type: 'array'
                 items: LLMToolProperty
+                description?: string
             }
 
             /**
@@ -250,6 +253,7 @@ export namespace Kimiko {
          */
         export namespace Context {
             export const SlidingWindow = SlidingWindowDecorator
+            export const UserProfile = UserProfileDecorator
         }
     }
     export const KimikoClient = Client

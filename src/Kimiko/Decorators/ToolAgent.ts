@@ -96,7 +96,11 @@ export class ToolAgentDecorator implements Kimiko.Types.IKimikoAgent {
      * Sends the current conversation to the LLM for processing with tool configuration.
      * @returns A promise that resolves to the LLM's response
      */
-    send(): Promise<Kimiko.Types.Groq_LLM.LLMResponseBody> {
+    send(tool_choice?: Kimiko.Types.Groq_LLM.LLMToolChoice): Promise<Kimiko.Types.Groq_LLM.LLMResponseBody> {
+        this.agent.setConfig({
+            ...this.agent.getConfig(),
+            tool_choice: tool_choice
+        })
         return this.agent.send()
     }
 }

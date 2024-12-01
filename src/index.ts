@@ -1,12 +1,16 @@
 import { Client, Events } from 'discord.js'
 import { Kimiko } from './Kimiko'
-
+import fs from 'fs'
+import path from 'path'
 import { config as dotenvConfig } from 'dotenv';
 
 // Load environment variables from .env file
 dotenvConfig();
 
 const TARGET_USER_ID = process.env.DISCORD_USER_ID;
+
+
+const personalityPromptPath = path.join(process.cwd(), 'personality.md')
 
 const client = new Kimiko.KimikoClient();
 
@@ -17,21 +21,14 @@ let BaseAgent = new Kimiko.KimikoAgent({
     messages: [
         {
             role: 'system',
-            content:
-                'You are Kimiko, a helpful and friendly personal assistant. Use emoji and humour when responding to the user',
+            content: fs.readFileSync(personalityPromptPath, 'utf-8'),
         },
     ],
 })
 
 // add the logging decorator to the agent such that all messages are logged for debugging
-const withLogging = new Kimiko.Decorators.LoggingAgent(BaseAgent);
-// to test it we also apply the sliding window decorator to the agent, such that only the last 3 messages are sent to the LLM
-// and the oldest one is removed. it is not practical to use this but it is useful for testing the decorator
-const PersonalityAgent = new Kimiko.Decorators.Context.SlidingWindow(
-    withLogging,
-    3
-);
-
+const LoggingAgent = new Kimiko.Decorators.LoggingAgent(BaseAgent)
+const PersonalityAgent = new Kimiko.Decorators.Context.UserProfile(LoggingAgent)
 client.once(Events.ClientReady, async (client: Client) => {
     try {
         const user = await client.users.fetch(TARGET_USER_ID as string);
@@ -44,12 +41,15 @@ client.once(Events.ClientReady, async (client: Client) => {
 });
 
 client.on(Events.MessageCreate, async (message) => {
-    PersonalityAgent.addMessage(message)
+    PersonalityAgent.addMessage(message);
     if (message.author.bot) return
     if (message.channel.isSendable()) {
-        message.channel.sendTyping()
-        const response = await PersonalityAgent.send()
-        message.channel.send(response.choices[0].message.content)
+        try {
+            const response = await PersonalityAgent.send();
+            await message.channel.send(response.choices[0].message.content);
+        } catch (error) {
+            console.error('Error during MessageCreate event:', error);
+        }
     }
 })
 
