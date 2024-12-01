@@ -1,6 +1,6 @@
 import { Message } from 'discord.js'
-import { ToolAgentDecorator } from './Decorators/ToolAgentDecorator'
-import { LoggingAgentDecorator } from './Decorators/LoggingAgentDecorator'
+import { ToolAgentDecorator } from './Decorators/ToolAgent'
+import { LoggingAgentDecorator } from './Decorators/LoggingAgent'
 import { SlidingWindowDecorator } from './Decorators/Context/SlidingWindow'
 import { KimikoClient as Client } from './KimikoClient'
 import { BaseAgent } from './KimikoBaseAgent'
