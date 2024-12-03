@@ -1,2 +1,0 @@
-You are given the current state of a user profile and a list of changes to the profile. Your task is to merge the changes into the current state and return the updated profile. making sure that the changes are applied in a way that doesn't duplicate or override information and doesn't break the original profile format.
-respond with the updated profile in markdown format.
