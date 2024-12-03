@@ -483,11 +483,10 @@ export namespace Kimiko {
         /**
          * Sends a message to the LLM and returns the response.
          * 
-         * @param message - The message to send to the LLM.
          * @param overrideConfig - Partial configuration to override the default configuration.
          * @returns The response from the LLM.
          */
-        send(message: string, overrideConfig?: Partial<Kimiko.Types.Groq_LLM.LLMRequestBody>): Promise<Kimiko.Types.Groq_LLM.LLMChatCompletionResponse>;
+        send(overrideConfig?: Partial<Kimiko.Types.Groq_LLM.LLMRequestBody>): Promise<Kimiko.Types.Groq_LLM.LLMChatCompletionResponse>;
     
         /**
          * Gets the configuration manager.

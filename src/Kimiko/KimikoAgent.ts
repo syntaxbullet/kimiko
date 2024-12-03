@@ -44,7 +44,6 @@ export class KimikoAgent implements Kimiko.IAgent {
      * @throws {Error} If messages are missing in the payload or if the API request fails
      */
     async send(
-        message: string,
         overrideConfig?: Partial<Kimiko.Types.Groq_LLM.LLMRequestBody>
     ): Promise<Kimiko.Types.Groq_LLM.LLMChatCompletionResponse> {
         const request = {
@@ -52,7 +51,6 @@ export class KimikoAgent implements Kimiko.IAgent {
             ...overrideConfig,
             messages: [
                 ...this.contextManager.get(),
-                { role: 'user', content: message },
             ],
         }
 
