@@ -1,82 +1,62 @@
-import { Message } from "discord.js";
-import { Kimiko } from ".";
-import { config as dotEnvConfig } from 'dotenv';
+import { Kimiko } from '.'
+import { config as dotEnvConfig } from 'dotenv'
 
-dotEnvConfig();
-const systemMessage: Kimiko.Types.Groq_LLM.LLMSystemMessagePayload = {
-    role: 'system',
-    content: 'You are a helpful assistant.',
-    name: 'system',
-};
+dotEnvConfig()
 
 /**
- * KimikoAgent class implements the IKimikoAgent interface and handles LLM interactions
- * @class
- * @implements {Kimiko.Types.IKimikoAgent}
+ * The main agent class that orchestrates interactions between configuration, context, tools, and the LLM
+ * @implements {Kimiko.IAgent}
  */
-export class KimikoAgent implements Kimiko.Types.IKimikoAgent {
-    /** Configuration for LLM requests */
-    private config: Kimiko.Types.Groq_LLM.LLMRequestBody;
-
-    /** Base URL for the LLM API */
-    private baseURL: string =
-    process.env.LLM_API_BASE_URL ||
-    'https://api.groq.com/openai/v1/chat/completions';
+export class KimikoAgent implements Kimiko.IAgent {
+    /** Configuration manager instance */
+    private configManager: Kimiko.IConfigManager
+    /** Context manager instance */
+    private contextManager: Kimiko.IContextManager
+    /** Tool manager instance */
+    private toolManager: Kimiko.IToolManager
+    /** Array of callback functions to be invoked on request completion */
+    private onRequestCallbacks: ((
+        request: Kimiko.Types.Groq_LLM.LLMRequestBody,
+        response: Kimiko.Types.Groq_LLM.LLMChatCompletionResponse
+    ) => void)[] = []
 
     /**
-     * Creates an instance of KimikoAgent
-     * @param {Kimiko.Types.Groq_LLM.LLMRequestBody} config - Configuration for the LLM
-     * @throws {Error} When model is not specified in config
+     * Creates a new KimikoAgent instance
+     * @param {Kimiko.IConfigManager} configManager - Configuration manager instance
+     * @param {Kimiko.IContextManager} contextManager - Context manager instance
+     * @param {Kimiko.IToolManager} toolManager - Tool manager instance
      */
-    constructor(config: Kimiko.Types.Groq_LLM.LLMRequestBody) {
-        if (!config.model) {
-            throw new Error('Model is required in the config')
+    constructor(
+        configManager: Kimiko.IConfigManager,
+        contextManager: Kimiko.IContextManager,
+        toolManager: Kimiko.IToolManager
+    ) {
+        this.configManager = configManager
+        this.contextManager = contextManager
+        this.toolManager = toolManager
+    }
+
+    /**
+     * Sends a message to the LLM and returns the response
+     * @param {string} message - The message to send to the LLM
+     * @param {Partial<Kimiko.Types.Groq_LLM.LLMRequestBody>} [overrideConfig] - Optional configuration overrides
+     * @returns {Promise<Kimiko.Types.Groq_LLM.LLMChatCompletionResponse>} The LLM's response
+     * @throws {Error} If messages are missing in the payload or if the API request fails
+     */
+    async send(
+        message: string,
+        overrideConfig?: Partial<Kimiko.Types.Groq_LLM.LLMRequestBody>
+    ): Promise<Kimiko.Types.Groq_LLM.LLMChatCompletionResponse> {
+        const request = {
+            ...this.configManager.getAll(),
+            ...overrideConfig,
+            messages: [
+                ...this.contextManager.get(),
+                { role: 'user', content: message },
+            ],
         }
 
-        this.config = {...config, tools: config.tools ?? [], messages: config.messages ?? [systemMessage]};
-    }
-
-    /**
-     * Converts a Discord message to LLM message format
-     * @param {Message} message - Discord message to convert
-     * @returns {Kimiko.Types.Groq_LLM.LLMMessagePayload} Converted message in LLM format
-     * @private
-     */
-    private convertDiscordMessage(message: Message): Kimiko.Types.Groq_LLM.LLMMessagePayload {
-        return {
-            role: message.author.bot ? 'assistant' : 'user',
-            content: message.content,
-            name: message.author.username,
-        };
-    }
-
-    /**
-     * Gets the base URL for the LLM API
-     * @returns {string} The base URL
-     * @private
-     */
-    private getBaseURL(): string {
-        return this.baseURL;
-    }
-
-    /**
-     * Processes a message
-     * @param {Kimiko.Types.Groq_LLM.LLMMessagePayload} message - Message to process
-     * @returns {{ done: boolean; message: Kimiko.Types.Groq_LLM.LLMMessagePayload }} Processing result
-     */
-    public process(message: Kimiko.Types.Groq_LLM.LLMMessagePayload): { done: boolean; message: Kimiko.Types.Groq_LLM.LLMMessagePayload } {
-        return { done: true, message };
-    }
-
-    /**
-     * Sends the current conversation to the LLM for processing
-     * @param {Kimiko.Types.Groq_LLM.LLMRequestBody} [configOverrride] - Optional configuration override
-     * @returns {Promise<Kimiko.Types.Groq_LLM.LLMResponseBody>} LLM's response
-     * @throws {Error} If messages are missing or if the API request fails
-     */
-    async send(configOverrride?: Kimiko.Types.Groq_LLM.LLMRequestBody): Promise<Kimiko.Types.Groq_LLM.LLMResponseBody> {
-        const payload = configOverrride ?? this.getConfig();
-        if (!payload.messages) {
+        if (!request.messages) {
             throw new Error('Messages are required in the payload')
         }
         try {
@@ -86,13 +66,14 @@ export class KimikoAgent implements Kimiko.Types.IKimikoAgent {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${process.env.LLM_API_KEY}`,
                 },
-                body: JSON.stringify(payload),
+                body: JSON.stringify(request),
             })
             if (!response.ok) {
                 throw new Error(
                     `HTTP error! status: ${response.status}, message: ${response.statusText}`
                 )
             }
+
             const responseBody =
                 (await response.json()) as Kimiko.Types.Groq_LLM.LLMResponseBody
             return responseBody
@@ -102,101 +83,57 @@ export class KimikoAgent implements Kimiko.Types.IKimikoAgent {
     }
 
     /**
-     * Adds a message to the conversation
-     * @param {Kimiko.Types.Groq_LLM.LLMMessagePayload} message - Message to add
-     * @returns {Kimiko.Types.Groq_LLM.LLMMessagePayload[]} Updated messages array
+     * Gets the base URL for the LLM API
+     * @returns {string} The base URL for the API, either from environment variable or default Groq endpoint
+     * @private
      */
-    public addMessage(message: Kimiko.Types.Groq_LLM.LLMMessagePayload): Kimiko.Types.Groq_LLM.LLMMessagePayload[] {
-        this.config.messages.push(message);
-        return this.config.messages;
+    private getBaseURL(): string {
+        return (
+            process.env.LLM_API_BASE_URL ||
+            'https://api.groq.com/openai/v1/chat/completions'
+        )
     }
 
     /**
-     * Sets the conversation messages
-     * @param {Kimiko.Types.Groq_LLM.LLMMessagePayload[]} messages - Messages to set
-     * @returns {Kimiko.Types.Groq_LLM.LLMMessagePayload[]} Updated messages array
+     * Gets the configuration manager instance
+     * @returns {Kimiko.IConfigManager} The configuration manager
      */
-    public setMessages(messages: Kimiko.Types.Groq_LLM.LLMMessagePayload[]): Kimiko.Types.Groq_LLM.LLMMessagePayload[] {
-        this.config.messages = messages;
-        return this.config.messages;
+    getConfigManager(): Kimiko.IConfigManager {
+        return this.configManager
     }
 
     /**
-     * Adds a tool to the LLM configuration
-     * @param {Kimiko.Types.Groq_LLM.LLMTool} tool - Tool to add
-     * @returns {Kimiko.Types.Groq_LLM.LLMTool[]} Updated tools array
+     * Gets the context manager instance
+     * @returns {Kimiko.IContextManager} The context manager
      */
-    public addTool(tool: Kimiko.Types.Groq_LLM.LLMTool): Kimiko.Types.Groq_LLM.LLMTool[] {
-        this.config.tools!.push(tool);
-        return this.config.tools!;
+    getContextManager(): Kimiko.IContextManager {
+        return this.contextManager
     }
 
     /**
-     * Sets the LLM configuration
-     * @param {Kimiko.Types.Groq_LLM.LLMRequestBody} config - Configuration to set
-     * @returns {Kimiko.Types.Groq_LLM.LLMRequestBody} Updated configuration
+     * Gets the tool manager instance
+     * @returns {Kimiko.IToolManager} The tool manager
      */
-    setConfig(config: Kimiko.Types.Groq_LLM.LLMRequestBody): Kimiko.Types.Groq_LLM.LLMRequestBody {
-        this.config = config;
-        return this.config;
+    getToolManager(): Kimiko.IToolManager {
+        return this.toolManager
     }
 
     /**
-     * Sets the tools for the LLM
-     * @param {Kimiko.Types.Groq_LLM.LLMTool[]} tools - Tools to set
-     * @returns {Kimiko.Types.Groq_LLM.LLMTool[]} Updated tools array
+     * Registers a callback function to be invoked whenever the agent processes a request
+     * @param {(request: Kimiko.Types.Groq_LLM.LLMRequestBody, response: Kimiko.Types.Groq_LLM.LLMChatCompletionResponse) => void} callback - Function to call on request completion
+     * @returns {() => void} A function that can be called to remove the callback
      */
-    public setTools(tools: Kimiko.Types.Groq_LLM.LLMTool[]): Kimiko.Types.Groq_LLM.LLMTool[] {
-        this.config.tools = tools;
-        return this.config.tools;
-    }
-
-    /**
-     * Adds a configuration key-value pair
-     * @template K
-     * @param {K} key - Configuration key
-     * @param {Kimiko.Types.Groq_LLM.LLMRequestBody[K]} value - Configuration value
-     * @returns {Kimiko.Types.Groq_LLM.LLMRequestBody} Updated configuration
-     */
-    public addConfig<K extends keyof Kimiko.Types.Groq_LLM.LLMRequestBody>(key: K, value: Kimiko.Types.Groq_LLM.LLMRequestBody[K]): Kimiko.Types.Groq_LLM.LLMRequestBody {
-        this.config = {...this.config, [key]: value};
-        return this.config;
-    }
-
-    /**
-     * Gets the current LLM configuration
-     * @returns {Kimiko.Types.Groq_LLM.LLMRequestBody} Current configuration
-     */
-    public getConfig(): Kimiko.Types.Groq_LLM.LLMRequestBody {
-        return this.config;
-    }
-
-    /**
-     * Gets the current tools array
-     * @returns {Kimiko.Types.Groq_LLM.LLMTool[]} Current tools
-     */
-    public getTools(): Kimiko.Types.Groq_LLM.LLMTool[] {
-        return this.config.tools!;
-    }
-
-    /**
-     * Gets the current messages array
-     * @returns {Kimiko.Types.Groq_LLM.LLMMessagePayload[]} Current messages
-     */
-    public getMessages(): Kimiko.Types.Groq_LLM.LLMMessagePayload[] {
-        return this.config.messages;
+    onRequest(
+        callback: (
+            request: Kimiko.Types.Groq_LLM.LLMRequestBody,
+            response: Kimiko.Types.Groq_LLM.LLMChatCompletionResponse
+        ) => void
+    ): () => void {
+        this.onRequestCallbacks.push(callback)
+        return () => {
+            this.onRequestCallbacks = this.onRequestCallbacks.filter(
+                (cb) => cb !== callback
+            )
+        }
     }
 }
-
-/**
- * Creates a new KimikoAgent instance with default configuration
- * @param {Kimiko.Types.Groq_LLM.LLMRequestBody} config - Configuration for the LLM
- * @returns {Kimiko.Types.IKimikoAgent} New KimikoAgent instance
- */
-const baseAgent = new KimikoAgent({
-    model: 'llama-3.1-70b-specdec',
-    messages: [systemMessage],
-    tools: [],
-});
-
-export default baseAgent;
