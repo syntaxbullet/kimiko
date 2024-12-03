@@ -1,10 +1,7 @@
 import { Message } from 'discord.js'
-import { ToolAgentDecorator } from './Decorators/ToolAgent'
-import { LoggingAgentDecorator } from './Decorators/LoggingAgent'
-import { SlidingWindowDecorator } from './Decorators/Context/SlidingWindow'
-import { KimikoClient as Client } from './KimikoClient'
-import { BaseAgent } from './KimikoBaseAgent'
-import { UserProfileDecorator } from './Decorators/Context/UserProfile'
+import { LoggingDecorator as Logging } from './Decorators/LoggingDecorator'
+import { KimikoClient } from './KimikoClient'
+import { KimikoAgent } from './KimikoAgent'
 
 /**
  * Main namespace for the Kimiko bot framework.
@@ -156,7 +153,11 @@ export namespace Kimiko {
             /**
              * String parameter type for tool parameters.
              */
-            export type JSONSchemaString = { type: 'string'; enum?: string[], description?: string }
+            export type JSONSchemaString = {
+                type: 'string'
+                enum?: string[]
+                description?: string
+            }
 
             /**
              * Number parameter type for tool parameters.
@@ -170,7 +171,10 @@ export namespace Kimiko {
             /**
              * Boolean parameter type for tool parameters.
              */
-            export type JSONSchemaBoolean = { type: 'boolean'; description?: string }
+            export type JSONSchemaBoolean = {
+                type: 'boolean'
+                description?: string
+            }
 
             /**
              * Object parameter type for tool parameters.
@@ -225,37 +229,26 @@ export namespace Kimiko {
         }
 
         /**
-         * Core interface for Kimiko agents.
-         * Defines the required methods for any agent implementation.
+         * Contains decorator implementations for extending agent functionality
          */
+        export namespace Decorators {
+            export const LoggingDecorator = Logging
+        }
+
         export interface IKimikoAgent {
-            addMessage(message: Groq_LLM.LLMMessagePayload | Message): void
             getMessages(): Groq_LLM.LLMMessagePayload[]
-            setMessages(messages: Groq_LLM.LLMMessagePayload[]): void
+            addMessage(message: Groq_LLM.LLMMessagePayload): Groq_LLM.LLMMessagePayload[]
+            setMessages(messages: Groq_LLM.LLMMessagePayload[]): Groq_LLM.LLMMessagePayload[]
+            getTools(): Groq_LLM.LLMTool[]
+            addTool(tool: Groq_LLM.LLMTool): Groq_LLM.LLMTool[]
+            setTools(tools: Groq_LLM.LLMTool[]): Groq_LLM.LLMTool[]
             getConfig(): Groq_LLM.LLMRequestBody
-            setConfig(config: Groq_LLM.LLMRequestBody): void
-            getBaseURL(): string
-            setBaseURL(url: string): void
-            convertDiscordMessage(message: Message): Groq_LLM.LLMMessagePayload
-            send(): Promise<Groq_LLM.LLMResponseBody>
+            setConfig(config: Groq_LLM.LLMRequestBody): Groq_LLM.LLMRequestBody
+            addConfig<K extends keyof Groq_LLM.LLMRequestBody>(key: K, value: Groq_LLM.LLMRequestBody[K]): Groq_LLM.LLMRequestBody
+            send(configOverrride?: Groq_LLM.LLMRequestBody): Promise<Groq_LLM.LLMResponseBody>
+            process(message: Groq_LLM.LLMMessagePayload): { done: boolean; message: Groq_LLM.LLMMessagePayload }
         }
     }
-
-    /**
-     * Contains decorator implementations for extending agent functionality.
-     */
-    export namespace Decorators {
-        export const ToolAgent = ToolAgentDecorator
-        export const LoggingAgent = LoggingAgentDecorator
-
-        /**
-         * Contains context-related decorators for managing conversation context.
-         */
-        export namespace Context {
-            export const SlidingWindow = SlidingWindowDecorator
-            export const UserProfile = UserProfileDecorator
-        }
-    }
-    export const KimikoClient = Client
-    export const KimikoAgent = BaseAgent
+    export const Client = KimikoClient
+    export const Agent = KimikoAgent
 }
