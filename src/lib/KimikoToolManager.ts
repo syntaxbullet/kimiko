@@ -1,4 +1,4 @@
-import { Kimiko } from ".";
+import { Kimiko } from "@kimiko";
 
 /**
  * Manages the available tools and their configurations for the Kimiko LLM interface

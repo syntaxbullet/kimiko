@@ -1,4 +1,4 @@
-import { Kimiko } from ".";
+import { Kimiko } from "@kimiko";
 
 /**
  * Manages the context and message history for the Kimiko LLM interface

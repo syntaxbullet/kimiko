@@ -1,4 +1,4 @@
-import { Kimiko } from ".";
+import { Kimiko } from "@kimiko";
 
 /**
  * Manages configuration settings for the Kimiko LLM interface

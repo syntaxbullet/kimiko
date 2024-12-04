@@ -1,4 +1,4 @@
-import { Kimiko } from '.'
+import { Kimiko } from '@kimiko'
 import { config as dotEnvConfig } from 'dotenv'
 
 dotEnvConfig()

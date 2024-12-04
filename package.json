@@ -6,9 +6,13 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "format": "npx prettier ./src/**/* --write",
+    "format": "npx prettier ./dist/**/* --write",
     "dev": "nodemon",
-    "start": "node dist/index.js"
+    "start": "node -r module-alias/register dist/index.js",
+    "clean": "rm -rf dist"
+  },
+  "_moduleAliases": {
+    "@kimiko": "dist/lib"
   },
   "author": "",
   "license": "ISC",
@@ -22,6 +26,7 @@
   "dependencies": {
     "discord.js": "^14.16.3",
     "dotenv": "^16.4.5",
+    "module-alias": "^2.2.3",
     "uuid": "^11.0.3"
   }
 }

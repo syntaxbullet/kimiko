@@ -1,5 +1,5 @@
 {
     "watch": ["src"],
     "ext": "ts",
-    "exec": "tsc && node ."
+    "exec": "tsc && node -r module-alias/register dist/index.js"
 }

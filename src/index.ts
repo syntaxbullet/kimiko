@@ -1,4 +1,4 @@
-import { Kimiko } from "./Kimiko";
+import { Kimiko } from "@kimiko";
 
 // Create a new instance of the PersonalityAgent
 const client = Kimiko.Client;
