@@ -510,9 +510,13 @@ export namespace Kimiko {
     }
 
     export const Agent = KimikoAgent
-    export const Client = KimikoClient
+    export const Client = new KimikoClient()
     export const ConfigManager = KimikoConfigManager
     export const ContextManager = KimikoContextManager
     export const ToolManager = KimikoToolManager
 
+    export interface IKimikoEmitter {
+        on(event: string, listener: (...args: any[]) => void): this
+        emit(event: string, ...args: any[]): boolean
+    }
 }

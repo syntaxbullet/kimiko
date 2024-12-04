@@ -14,6 +14,9 @@ export class KimikoAgent implements Kimiko.IAgent {
     private contextManager: Kimiko.IContextManager
     /** Tool manager instance */
     private toolManager: Kimiko.IToolManager
+    /** Event Emitter  */
+    public events: Kimiko.IKimikoEmitter
+
     /** Array of callback functions to be invoked on request completion */
     private onRequestCallbacks: ((
         request: Kimiko.Types.Groq_LLM.LLMRequestBody,
@@ -29,11 +32,13 @@ export class KimikoAgent implements Kimiko.IAgent {
     constructor(
         configManager: Kimiko.IConfigManager,
         contextManager: Kimiko.IContextManager,
-        toolManager: Kimiko.IToolManager
+        toolManager: Kimiko.IToolManager,
+        eventEmitter: Kimiko.IKimikoEmitter
     ) {
         this.configManager = configManager
         this.contextManager = contextManager
         this.toolManager = toolManager
+        this.events = eventEmitter
     }
 
     /**
