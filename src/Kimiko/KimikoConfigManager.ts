@@ -31,6 +31,7 @@ export class KimikoConfigManager implements Kimiko.IConfigManager {
         this.config = { ...this.defaultConfig, ...config };
 
         if (ContextManager) {
+            ContextManager.set(this.config.messages);
             this.config.messages = ContextManager.get();
         }
         if (ToolManager) {

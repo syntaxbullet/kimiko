@@ -46,15 +46,16 @@ export class KimikoAgent implements Kimiko.IAgent {
     async send(
         overrideConfig?: Partial<Kimiko.Types.Groq_LLM.LLMRequestBody>
     ): Promise<Kimiko.Types.Groq_LLM.LLMChatCompletionResponse> {
+        const baseConfig = this.configManager.getAll();
         const request = {
-            ...this.configManager.getAll(),
+            ...baseConfig,
             ...overrideConfig,
             messages: [
-                ...this.contextManager.get(),
+                ...this.contextManager.get()
             ],
         }
 
-        if (!request.messages) {
+        if (!request.messages || request.messages.length === 0) {
             throw new Error('Messages are required in the payload')
         }
         try {
