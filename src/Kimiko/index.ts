@@ -398,85 +398,77 @@ export namespace Kimiko {
 
     export interface IToolManager {
         /**
-         * Retrieves all tools currently registered in the manager.
-         * 
+         * Registers a new tool in the tool manager.
+         *
+         * @param tool - The tool to register.
+         * @param handler - The handler function for the tool.
+         * @returns An object indicating success status and any errors if the operation fails (e.g., if locked).
+         */
+        register(
+            tool: Kimiko.Types.Groq_LLM.LLMTool,
+            handler: (
+                message: Kimiko.Types.Groq_LLM.LLMAssistantMessagePayload
+            ) => Promise<Kimiko.Types.Groq_LLM.LLMChatCompletionResponse> | Kimiko.Types.Groq_LLM.LLMChatCompletionResponse | void
+        ): { success: boolean; errors?: string[] }
+
+        /**
+         * Unregisters a tool from the tool manager.
+         *
+         * @param name - The name of the tool to unregister.
+         * @returns An object indicating success status and any errors if the operation fails (e.g., if locked).
+         */
+        unregister(name: string): { success: boolean; errors?: string[] }
+
+        /**
+         * Retrieves all registered tools in the tool manager.
+         *
          * @returns An array of all registered tools.
          */
-        getAll(): Kimiko.Types.Groq_LLM.LLMTool[];
-    
+        getAll(): Kimiko.Types.Groq_LLM.LLMTool[]
+
         /**
          * Retrieves a specific tool by its name.
-         * 
+         *
          * @param name - The name of the tool to retrieve.
          * @returns The tool if found, or undefined if it does not exist.
          */
-        getByName(name: string): Kimiko.Types.Groq_LLM.LLMTool | undefined;
-    
+        getByName(name: string): Kimiko.Types.Groq_LLM.LLMTool | undefined
+
         /**
-         * Adds a new tool to the manager.
-         * 
-         * @param tool - The tool to add.
-         * @returns An object indicating success status and any errors if the operation fails.
-         */
-        add(tool: Kimiko.Types.Groq_LLM.LLMTool): { success: boolean; errors?: string[] };
-    
-        /**
-         * Removes a tool from the manager by its name.
-         * 
-         * @param name - The name of the tool to remove.
-         * @returns An object indicating success status and any errors if the operation fails.
-         */
-        remove(name: string): { success: boolean; errors?: string[] };
-    
-        /**
-         * Checks whether a tool with the specified name exists in the manager.
-         * 
+         * Checks whether a tool with the specified name exists in the tool manager.
+         *
          * @param name - The name of the tool to check.
          * @returns True if the tool exists, otherwise false.
          */
-        has(name: string): boolean;
-    
+        has(name: string): boolean
+
         /**
-         * Clears all tools from the manager.
-         * 
-         * @returns An object indicating success status and any errors if the operation fails.
-         */
-        clear(): { success: boolean; errors?: string[] };
-    
-        /**
-         * Locks the tool manager to prevent further modifications.
-         * 
-         * @returns An object indicating success status and any errors if the operation fails.
-         */
-        lock(): { success: boolean; errors?: string[] };
-    
-        /**
-         * Checks whether the tool manager is currently locked.
-         * 
-         * @returns True if the manager is locked, otherwise false.
-         */
-        isLocked(): boolean;
-    
-        /**
-         * Retrieves the total number of tools currently registered in the manager.
-         * 
-         * @returns The number of tools in the manager.
-         */
-        count(): number;
-    
-        /**
-         * Checks whether the tool manager currently has any tools registered.
-         * 
-         * @returns True if the tool manager is empty, otherwise false.
-         */
-        isEmpty(): boolean;
-    
-        /**
-         * Registers a callback function to be invoked whenever the tool set changes.
-         * 
+         * Registers a callback function to be invoked whenever the tool manager changes.
+         *
          * @param callback - A function that is called with the updated list of tools.
          */
-        onChange(callback: (tools: Kimiko.Types.Groq_LLM.LLMTool[]) => void): void;
+        onChange(callback: (tools: Kimiko.Types.Groq_LLM.LLMTool[]) => void): void
+
+        /**
+         * Checks whether the tool manager currently has any tools registered.
+         *
+         * @returns True if the tool manager is empty, otherwise false.
+         */
+        isEmpty(): boolean
+
+        /**
+         * Checks whether the tool manager is currently locked.
+         *
+         * @returns True if the manager is locked, otherwise false.
+         */
+        isLocked(): boolean
+
+        /**
+         * Locks the tool manager to prevent further modifications.
+         *
+         * @returns An object indicating success status and any errors if the operation fails.
+         */
+        lock(): { success: boolean; errors?: string[] }
     }
     
     export interface IAgent {
@@ -522,4 +514,5 @@ export namespace Kimiko {
     export const ConfigManager = KimikoConfigManager
     export const ContextManager = KimikoContextManager
     export const ToolManager = KimikoToolManager
+
 }
