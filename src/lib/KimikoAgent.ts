@@ -39,6 +39,9 @@ export class KimikoAgent implements Kimiko.IAgent {
         this.contextManager = contextManager
         this.toolManager = toolManager
         this.events = eventEmitter
+
+        // sync context with config
+        this.contextManager.set(this.configManager.getAll().messages)
     }
 
     /**

@@ -33,7 +33,7 @@ export class KimikoClient extends Client {
             console.log(`Logged in as ${this.user?.tag}!`)
             const user = await this.users.fetch(this.userID)
             if (user) {
-                await user.send('Kimiko is online!')
+                await user.send('Hi :wave:')
                 console.log(`Sent init message to ${user.tag}`)
             }
         })
