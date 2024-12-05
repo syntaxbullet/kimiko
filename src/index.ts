@@ -1,10 +1,11 @@
 import { Kimiko } from "@kimiko";
-import PersonalityAgent from "./PersonalityAgent";
+import KimikoAgent from "./Kimiko";
 
-// Create a new instance of the PersonalityAgent
+// Create a new instance of the Discord client
 const client = Kimiko.Client;
 
-PersonalityAgent.registerEventHandlers();
+// register event handlers for the kimiko agent
+KimikoAgent.registerEventHandlers();
 
 // Start the Discord bot
 client.login(process.env.DISCORD_APP_TOKEN);

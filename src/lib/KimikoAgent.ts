@@ -143,4 +143,17 @@ export class KimikoAgent implements Kimiko.IAgent {
             )
         }
     }
+    /**
+     *  Handles tool calls
+     * @param {Kimiko.Types.Groq_LLM.LLMAssistantMessagePayload} message
+     * @returns {Promise<Kimiko.Types.Groq_LLM.LLMChatCompletionResponse>}
+     */ 
+    async handleToolCalls(message: Kimiko.Types.Groq_LLM.LLMAssistantMessagePayload) {
+        const toolCalls = this.getToolManager().handleToolCall(message)
+        this.getContextManager().append(toolCalls)
+        this.getConfigManager().set('tool_choice', 'none')
+        const response = await this.send()
+        this.getConfigManager().set('tool_choice', 'auto')
+        return response
+    }
 }

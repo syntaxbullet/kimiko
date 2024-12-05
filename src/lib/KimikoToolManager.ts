@@ -8,7 +8,7 @@ export class KimikoToolManager implements Kimiko.IToolManager {
     /** Array of registered tools */
     private tools: Kimiko.Types.Groq_LLM.LLMTool[] = [];
     /** Map of tool names to their handlers */
-    private handlers: Map<string, (message: Kimiko.Types.Groq_LLM.LLMAssistantMessagePayload) => Kimiko.Types.Groq_LLM.LLMChatCompletionResponse> = new Map();
+    private handlers: Map<string, (message: Kimiko.Types.Groq_LLM.LLMAssistantMessagePayload) => Kimiko.Types.Groq_LLM.LLMToolMessagePayload> = new Map();
     /** Array of callback functions to be called when tools change */
     private onChangeCallbacks: ((tools: Kimiko.Types.Groq_LLM.LLMTool[]) => void)[] = [];
     /** Flag indicating whether the manager is locked */
@@ -22,7 +22,7 @@ export class KimikoToolManager implements Kimiko.IToolManager {
      */
     register(
         tool: Kimiko.Types.Groq_LLM.LLMTool,
-        handler: (message: Kimiko.Types.Groq_LLM.LLMAssistantMessagePayload) => Kimiko.Types.Groq_LLM.LLMChatCompletionResponse
+        handler: (message: Kimiko.Types.Groq_LLM.LLMAssistantMessagePayload) => Kimiko.Types.Groq_LLM.LLMToolMessagePayload
     ): { success: boolean; errors?: string[] } {
         if (this.islocked) {
             return { success: false, errors: ['The tool manager is locked, unable to register tools.'] };
@@ -109,5 +109,23 @@ export class KimikoToolManager implements Kimiko.IToolManager {
     isEmpty(): boolean {
         return this.tools.length === 0;
     }
+
+    handleToolCall(message: Kimiko.Types.Groq_LLM.LLMAssistantMessagePayload): Kimiko.Types.Groq_LLM.LLMToolMessagePayload {
+        if (!message.tool_calls || message.tool_calls.length === 0) {
+            throw new Error('No tool calls found in message');
+        }
+        // call the handler for the tool
+        const handler = this.handlers.get(message.tool_calls[0].function.name);
+        if (!handler) {
+            return {
+                role: 'tool',
+                content: 'Tool call failed: Tool not found',
+                tool_call_id: message.tool_calls[0].id,
+            } as Kimiko.Types.Groq_LLM.LLMToolMessagePayload
+        }
+        const toolResponse = handler(message);
+        return toolResponse;
+    }
+
 }
 

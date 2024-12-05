@@ -15,6 +15,7 @@ export class KimikoConfigManager implements Kimiko.IConfigManager {
     private defaultConfig: Kimiko.Types.Groq_LLM.LLMRequestBody = {
         model: "llama-3.1-70b-specdec",
         messages: [{ role: "system", content: "You are a helpful assistant." }],
+        parallel_tool_calls: false,
         temperature: 0.7,
         max_tokens: 500,
     };

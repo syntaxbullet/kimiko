@@ -1,3 +1,4 @@
+import { Message } from 'discord.js'
 import { KimikoAgent } from './KimikoAgent'
 import { KimikoClient } from './KimikoClient'
 import KimikoConfigManager from './KimikoConfigManager'
@@ -408,7 +409,7 @@ export namespace Kimiko {
             tool: Kimiko.Types.Groq_LLM.LLMTool,
             handler: (
                 message: Kimiko.Types.Groq_LLM.LLMAssistantMessagePayload
-            ) => Promise<Kimiko.Types.Groq_LLM.LLMChatCompletionResponse> | Kimiko.Types.Groq_LLM.LLMChatCompletionResponse | void
+            ) => Promise<Kimiko.Types.Groq_LLM.LLMToolMessagePayload> | Kimiko.Types.Groq_LLM.LLMToolMessagePayload | void
         ): { success: boolean; errors?: string[] }
 
         /**
@@ -469,6 +470,14 @@ export namespace Kimiko {
          * @returns An object indicating success status and any errors if the operation fails.
          */
         lock(): { success: boolean; errors?: string[] }
+
+        /**
+         * Calls the handler function for a specific tool on a tool call message.
+         *
+         * @param message - The tool call message.
+         */
+        handleToolCall(message: Kimiko.Types.Groq_LLM.LLMAssistantMessagePayload): Kimiko.Types.Groq_LLM.LLMToolMessagePayload
+        
     }
     
     export interface IAgent {
@@ -507,6 +516,17 @@ export namespace Kimiko {
          * @returns A function that can be called to remove the callback.
          */
         onRequest(callback: (request: Kimiko.Types.Groq_LLM.LLMRequestBody, response: Kimiko.Types.Groq_LLM.LLMChatCompletionResponse) => void): () => void;
+    
+        /**
+         * Handles tool calls
+         * @param {Kimiko.Types.Groq_LLM.LLMAssistantMessagePayload} message
+         * @returns {Promise<Kimiko.Types.Groq_LLM.LLMChatCompletionResponse>}
+         */
+        handleToolCalls(message: Kimiko.Types.Groq_LLM.LLMAssistantMessagePayload): Promise<Kimiko.Types.Groq_LLM.LLMChatCompletionResponse>
+    }
+    export interface IKimikoEmitter {
+        on(event: string, listener: (...args: any[]) => void): this
+        emit(event: string, ...args: any[]): boolean
     }
 
     export const Agent = KimikoAgent
@@ -515,8 +535,12 @@ export namespace Kimiko {
     export const ContextManager = KimikoContextManager
     export const ToolManager = KimikoToolManager
 
-    export interface IKimikoEmitter {
-        on(event: string, listener: (...args: any[]) => void): this
-        emit(event: string, ...args: any[]): boolean
+    export const Utils = {
+        convertDiscordMessageToLLMMessage: (message: Message): Kimiko.Types.Groq_LLM.LLMMessagePayload => {
+            return {
+                role: message.author.bot ? "assistant" : "user",
+                content: message.content,
+            };
+        },
     }
 }
