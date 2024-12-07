@@ -1,11 +1,12 @@
 import { Kimiko } from "@kimiko";
-import KimikoAgent from "./Kimiko";
-
+import { ExampleAgent } from "./ExampleAgent";
 // Create a new instance of the Discord client
-const client = Kimiko.Client;
+const client = Kimiko.Core.Client;
+const eventRegistry = Kimiko.Core.EventRegistry
 
-// register event handlers for the kimiko agent
-KimikoAgent.registerEventHandlers();
+const agent = new ExampleAgent();
+
+eventRegistry.register(agent);
 
 // Start the Discord bot
 client.login(process.env.DISCORD_APP_TOKEN);
