@@ -1,7 +1,7 @@
 import { Kimiko } from "@kimiko"
 import { KimikoClient } from "./KimikoClient"
-import { KimikoEventRegistry } from "./KimkoEventRegistry"
 import { EventEmitter } from "events"
+import { KimikoBaseAgent } from "./KimikoBaseAgent"
 
 export type Instruction = Kimiko.LLM.SystemMessagePayload
 export type Tools = Kimiko.LLM.Tool[]
@@ -30,38 +30,43 @@ export interface IEventResponder {
     registerEvents: (emitter: EventEmitter) => void
 }
 
-export interface ILLMAgent {
+export interface IAgent {
     id: string
     name: string
-    events: EventDisclosure
+    instruction: Instruction
+    messages: Messages
+    tools: Tools
+    config: Config
+    events: { emits: string[], listensTo: string[] }
+    toolHandlers: Map<string, ToolHandler>
 
-    // Message management
-    appendMessage(message: Kimiko.LLM.MessagePayload): void
-    clearMessages(): void
-    getMessages(): Kimiko.LLM.MessagePayload[]
-    prependMessage(message: Kimiko.LLM.MessagePayload): void
+    getName: () => string
+    setName: (name: string) => void
 
-    // Tool management
-    handleToolCalls: (tool_calls: Kimiko.LLM.ToolCall[]) => Promise<Kimiko.LLM.ToolMessagePayload[]>
-    registerTool: (toolManifest: Kimiko.LLM.Tool, toolHandler: ToolHandler) => void
+    getId: () => string
+    setId: (id: string) => void
 
-    // Event management
-    getEvents(): EventDisclosure
-    registerEvents: (emitter: EventEmitter) => void
+    setEvents: (events: EventDisclosure) => void
+    getEvents: () => EventDisclosure
 
-    // Configuration and state
-    getConfig(): Kimiko.LLM.RequestBody
-    getInstruction(): Kimiko.LLM.SystemMessagePayload
-    send(configOverride: Partial<Config>): Promise<Kimiko.LLM.ChatCompletionResponse>
-}
+    getInstruction: () => Instruction
+    setInstruction: (instruction: Instruction) => void
+    
+    getMessages: () => Messages
+    setMessages: (messages: Messages) => void
+    appendMessage: (message: Exclude<Kimiko.LLM.MessagePayload, Kimiko.LLM.SystemMessagePayload>) => void
+    prependMessage: (message: Exclude<Kimiko.LLM.MessagePayload, Kimiko.LLM.SystemMessagePayload>) => void
 
-export interface IEventRegistry {
-    responders: IEventResponder[]
-    emitter: EventEmitter
-    register(responder: IEventResponder): void
-    unregister(responder: IEventResponder): void
-    broadcast(event: string, data: any): void
+    getTools: () => Tools
+    setTools: (tools: Tools) => void
+    registerTool: (tool: Kimiko.LLM.Tool, handler: ToolHandler) => void
+
+    getConfig: () => Config
+    setConfig: (config: Config) => void
+
+    send(configOverride?: Config): Promise<Kimiko.LLM.ResponseBody>
+    registerEvents: () => void
 }
 
 export const Client = new KimikoClient()
-export const EventRegistry = new KimikoEventRegistry(Client)
+export const Agent = KimikoBaseAgent
