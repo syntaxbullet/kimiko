@@ -1,5 +1,4 @@
 import { Kimiko } from '@kimiko'
-import { AssistantMessagePayload, ToolCall, ToolMessagePayload } from '@kimiko/llm.types'
 import { Message as DiscordMessage } from 'discord.js'
 
 const SystemPrompt = `Craft friendly and engaging messages as Kimiko, the user's personal assistant. 
@@ -30,7 +29,7 @@ Base.setConfig({
 Base.setName('kimiko:personality')
 
 Base.setEvents({
-    emits: ['init', 'afterResponse'],
+    emits: ['init', 'beforeResponse', 'afterResponse'],
     listensTo: ['messageCreate'],
 })
 
@@ -49,8 +48,8 @@ const DisordMessageToLLMMessagePayload = (
 }
 
 const handleToolCall = async (response: Kimiko.LLM.ResponseBody) => {
-    const toolMessage = response.choices[0].message as AssistantMessagePayload
-    const toolCall = toolMessage.tool_calls as ToolCall[]
+    const toolMessage = response.choices[0].message as Kimiko.LLM.AssistantMessagePayload
+    const toolCall = toolMessage.tool_calls as Kimiko.LLM.ToolCall[]
 
     for (const call of toolCall) {
         const args = JSON.parse(call.function.arguments)
@@ -60,7 +59,7 @@ const handleToolCall = async (response: Kimiko.LLM.ResponseBody) => {
         if (!handler) throw new Error(`No handler found for tool ${name}`)
         const toolResponse = await handler(...args)
 
-        Base.appendMessage(toolResponse as ToolMessagePayload)
+        Base.appendMessage(toolResponse as Kimiko.LLM.ToolMessagePayload)
     }
 }
 
@@ -87,6 +86,7 @@ const handleUserMessage = async (message: DiscordMessage) => {
     const llmMessage = DisordMessageToLLMMessagePayload(message)
     Base.appendMessage(llmMessage)
     let response = await Base.send()
+    Base.emitter.emit(`${Base.name}::beforeResponse`, createEmitterResponse({ response, agent: Base, message }))
     if (!message.channel.isSendable()) return
     message.channel.sendTyping()
     if (response.choices[0].finish_reason === 'tool_calls') return handleToolCall(response)
