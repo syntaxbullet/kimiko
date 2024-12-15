@@ -4,7 +4,6 @@ import { ToolRegistry } from "./ToolsRegistry";
 import { LLMConfiguration } from "./LLMConfiguration";
 import EventEmitter from "events";
 import { config as dotenvConfig } from "dotenv";
-import { ResponseBody } from "@kimiko/types/llm.types";
 
 dotenvConfig();
 
