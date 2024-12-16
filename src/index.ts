@@ -1,9 +1,13 @@
-import { KimikoClient } from "./KimikoClient";
-import { config as dotenvConfig } from "dotenv";
+import { ChatLLM } from "@kimiko/primitives/ChatLLM";
 
-// Load environment variables as early as possible
-dotenvConfig()
+const examplellm = ChatLLM("Give the most concise answer possible", { model: "llama-3.3-70b-versatile", messages: [], max_tokens: 100 });
 
-const client = new KimikoClient();
+(async () => {
+    const response = await examplellm.appendMessage("NATO member, 'true'/'false', no periods")
+        .batchInstruct(["United States", "Canada", "Spain", "France", "Australia"]);
 
-client.login()
+    const responseMessageContents = response
+        .map((res) => res.choices[0].message.content);
+
+    console.log(responseMessageContents);
+})();
